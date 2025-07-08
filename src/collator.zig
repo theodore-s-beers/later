@@ -27,6 +27,10 @@ pub const Collator = struct {
     single_map: ?types.SinglesMap = null,
     variable_map: ?AutoHashMap(u32, void) = null,
 
+    //
+    // Init, deinit
+    //
+
     fn init(
         alloc: std.mem.Allocator,
         table: types.CollationTable,
@@ -62,6 +66,10 @@ pub const Collator = struct {
         if (self.single_map) |*map| map.deinit();
         if (self.variable_map) |*map| map.deinit();
     }
+
+    //
+    // Collation
+    //
 
     fn collateFallible(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
@@ -99,6 +107,10 @@ pub const Collator = struct {
     pub fn collate(self: *Collator, a: []const u8, b: []const u8) std.math.Order {
         return self.collateFallible(a, b) catch unreachable;
     }
+
+    //
+    // Loading data on demand
+    //
 
     pub fn getCCC(self: *Collator, codepoint: u32) !?u8 {
         if (self.ccc_map == null) {
