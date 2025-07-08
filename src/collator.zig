@@ -24,9 +24,7 @@ pub const Collator = struct {
     decomp_map: ?types.SinglesMap = null,
     fcd_map: ?AutoHashMap(u32, u16) = null,
     multi_map: ?types.MultiMap = null,
-    multi_map_cldr: ?types.MultiMap = null,
     single_map: ?types.SinglesMap = null,
-    single_map_cldr: ?types.SinglesMap = null,
     variable_map: ?AutoHashMap(u32, void) = null,
 
     fn init(
@@ -61,9 +59,7 @@ pub const Collator = struct {
         if (self.decomp_map) |*map| map.deinit();
         if (self.fcd_map) |*map| map.deinit();
         if (self.multi_map) |*map| map.deinit();
-        if (self.multi_map_cldr) |*map| map.deinit();
         if (self.single_map) |*map| map.deinit();
-        if (self.single_map_cldr) |*map| map.deinit();
         if (self.variable_map) |*map| map.deinit();
     }
 
