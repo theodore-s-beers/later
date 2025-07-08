@@ -26,6 +26,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const load_mod = b.createModule(.{
+        .root_source_file = b.path("src/load.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const normalize_mod = b.createModule(.{
         .root_source_file = b.path("src/normalize.zig"),
         .target = target,
@@ -47,9 +53,12 @@ pub fn build(b: *std.Build) void {
     lib_mod.addImport("collator", collator_mod);
 
     collator_mod.addImport("decode", decode_mod);
+    collator_mod.addImport("load", load_mod);
     collator_mod.addImport("normalize", normalize_mod);
     collator_mod.addImport("types", types_mod);
     collator_mod.addImport("util", util_mod);
+
+    load_mod.addImport("types", types_mod);
 
     normalize_mod.addImport("collator", collator_mod);
 
@@ -73,6 +82,9 @@ pub fn build(b: *std.Build) void {
     const decode_unit_tests = b.addTest(.{ .root_module = decode_mod });
     const run_decode_unit_tests = b.addRunArtifact(decode_unit_tests);
 
+    const load_unit_tests = b.addTest(.{ .root_module = load_mod });
+    const run_load_unit_tests = b.addRunArtifact(load_unit_tests);
+
     const normalize_unit_tests = b.addTest(.{ .root_module = normalize_mod });
     const run_normalize_unit_tests = b.addRunArtifact(normalize_unit_tests);
 
@@ -86,6 +98,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_collator_unit_tests.step);
     test_step.dependOn(&run_decode_unit_tests.step);
+    test_step.dependOn(&run_load_unit_tests.step);
     test_step.dependOn(&run_normalize_unit_tests.step);
     test_step.dependOn(&run_types_unit_tests.step);
     test_step.dependOn(&run_util_unit_tests.step);
