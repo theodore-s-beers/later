@@ -3,6 +3,7 @@ const AutoHashMap = std.AutoHashMap;
 
 const decode = @import("decode");
 const normalize = @import("normalize");
+const util = @import("util");
 
 const MultiMap = struct {
     map: std.AutoHashMap(u64, []const u32),
@@ -118,13 +119,19 @@ pub const Collator = struct {
         try normalize.makeNFD(self, &self.a_chars);
         try normalize.makeNFD(self, &self.b_chars);
 
+        if (std.mem.eql(u32, self.a_chars.items, self.b_chars.items)) {
+            if (self.tiebreak) return util.cmp(u8, a, b);
+
+            return util.cmp(u32, self.a_chars.items, self.b_chars.items);
+        }
+
         self.a_cea.clearRetainingCapacity();
         self.b_cea.clearRetainingCapacity();
 
         std.debug.print("a: {any}\n", .{self.a_chars.items});
         std.debug.print("b: {any}\n", .{self.b_chars.items});
 
-        return std.math.order(self.a_chars.items[0], self.b_chars.items[0]);
+        return util.cmp(u32, self.a_chars.items, self.b_chars.items);
     }
 
     pub fn collate(self: *Collator, a: []const u8, b: []const u8) std.math.Order {
