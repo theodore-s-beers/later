@@ -106,3 +106,26 @@ pub fn loadFCD(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32,
 
     return map;
 }
+
+pub fn loadVariable(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32, void) {
+    const data = try std.fs.cwd().readFileAlloc(alloc, path, 64 * 1024);
+    defer alloc.free(data);
+
+    const count: usize = data.len / @sizeOf(u32);
+
+    var map = std.AutoHashMap(u32, void).init(alloc);
+    errdefer map.deinit();
+
+    try map.ensureTotalCapacity(@intCast(count));
+
+    for (0..count) |i| {
+        const offset = i * @sizeOf(u32);
+
+        const bytes = data[offset..][0..@sizeOf(u32)];
+        const code_point = std.mem.readInt(u32, bytes, .little);
+
+        map.putAssumeCapacityNoClobber(code_point, {});
+    }
+
+    return map;
+}

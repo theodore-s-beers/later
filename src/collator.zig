@@ -1,6 +1,7 @@
 const std = @import("std");
 const AutoHashMap = std.AutoHashMap;
 
+const consts = @import("consts");
 const decode = @import("decode");
 const load = @import("load");
 const normalize = @import("normalize");
@@ -13,6 +14,10 @@ pub const Collator = struct {
     table: types.CollationTable = .cldr,
     shifting: bool = true,
     tiebreak: bool = true,
+
+    low_table: [183]u32,
+    multi_path: []const u8,
+    single_path: []const u8,
 
     a_chars: std.ArrayList(u32),
     b_chars: std.ArrayList(u32),
@@ -37,11 +42,21 @@ pub const Collator = struct {
         shifting: bool,
         tiebreak: bool,
     ) Collator {
+        const low_table: [183]u32 = if (table == .cldr) consts.LOW_CLDR else consts.LOW;
+        const multi_path = if (table == .cldr) "bin/multi_cldr.bin" else "bin/multi.bin";
+        const single_path = if (table == .cldr) "bin/single_cldr.bin" else "bin/single.bin";
+
         return Collator{
             .alloc = alloc,
+
             .table = table,
             .shifting = shifting,
             .tiebreak = tiebreak,
+
+            .low_table = low_table,
+            .multi_path = multi_path,
+            .single_path = single_path,
+
             .a_chars = std.ArrayList(u32).init(alloc),
             .b_chars = std.ArrayList(u32).init(alloc),
             .a_cea = std.ArrayList(u32).init(alloc),
@@ -98,9 +113,12 @@ pub const Collator = struct {
         self.a_cea.clearRetainingCapacity();
         self.b_cea.clearRetainingCapacity();
 
+        // To be continued...
+
         std.debug.print("a: {any}\n", .{self.a_chars.items});
         std.debug.print("b: {any}\n", .{self.b_chars.items});
 
+        // Dummy return
         return util.cmp(u32, self.a_chars.items, self.b_chars.items);
     }
 
@@ -131,5 +149,26 @@ pub const Collator = struct {
             self.fcd_map = try load.loadFCD(self.alloc, "bin/fcd.bin");
         }
         return self.fcd_map.?.get(codepoint);
+    }
+
+    pub fn getMulti(self: *Collator, codepoint: u32) !?[]const u32 {
+        if (self.multi_map == null) {
+            self.multi_map = try load.loadMulti(self.alloc, self.multi_path);
+        }
+        return self.multi_map.?.get(codepoint);
+    }
+
+    pub fn getSingle(self: *Collator, codepoint: u32) !?[]const u32 {
+        if (self.single_map == null) {
+            self.single_map = try load.loadSingle(self.alloc, self.single_path);
+        }
+        return self.single_map.?.map.get(codepoint);
+    }
+
+    pub fn isVariable(self: *Collator, codepoint: u32) !bool {
+        if (self.variable_map == null) {
+            self.variable_map = try load.loadVariable(self.alloc, "bin/variable.bin");
+        }
+        return self.variable_map.?.get(codepoint) != null;
     }
 };
