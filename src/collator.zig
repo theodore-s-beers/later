@@ -3,48 +3,13 @@ const AutoHashMap = std.AutoHashMap;
 
 const decode = @import("decode");
 const normalize = @import("normalize");
+const types = @import("types");
 const util = @import("util");
-
-const MultiMap = struct {
-    map: std.AutoHashMap(u64, []const u32),
-    backing: ?[]const u32,
-    alloc: std.mem.Allocator,
-
-    fn deinit(self: *MultiMap) void {
-        if (self.backing) |backing| {
-            self.alloc.free(backing);
-        } else {
-            var it = self.map.iterator();
-            while (it.next()) |entry| self.alloc.free(entry.value_ptr.*);
-        }
-
-        self.map.deinit();
-    }
-};
-
-const SinglesMap = struct {
-    map: std.AutoHashMap(u32, []const u32),
-    backing: ?[]const u32,
-    alloc: std.mem.Allocator,
-
-    fn deinit(self: *SinglesMap) void {
-        if (self.backing) |backing| {
-            self.alloc.free(backing);
-        } else {
-            var it = self.map.iterator();
-            while (it.next()) |entry| self.alloc.free(entry.value_ptr.*);
-        }
-
-        self.map.deinit();
-    }
-};
-
-const Table = enum { ducet, cldr };
 
 pub const Collator = struct {
     alloc: std.mem.Allocator,
 
-    table: Table = .cldr,
+    table: types.CollationTable = .cldr,
     shifting: bool = true,
     tiebreak: bool = true,
 
@@ -55,17 +20,17 @@ pub const Collator = struct {
     b_cea: std.ArrayList(u32),
 
     ccc_map: ?AutoHashMap(u32, u8) = null,
-    decomp_map: ?SinglesMap = null,
+    decomp_map: ?types.SinglesMap = null,
     fcd_map: ?AutoHashMap(u32, u16) = null,
-    multi_map: ?MultiMap = null,
-    multi_map_cldr: ?MultiMap = null,
-    single_map: ?SinglesMap = null,
-    single_map_cldr: ?SinglesMap = null,
+    multi_map: ?types.MultiMap = null,
+    multi_map_cldr: ?types.MultiMap = null,
+    single_map: ?types.SinglesMap = null,
+    single_map_cldr: ?types.SinglesMap = null,
     variable_map: ?AutoHashMap(u32, void) = null,
 
     fn init(
         alloc: std.mem.Allocator,
-        table: Table,
+        table: types.CollationTable,
         shifting: bool,
         tiebreak: bool,
     ) Collator {
@@ -185,7 +150,7 @@ fn loadCccBin(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32, 
     return map;
 }
 
-fn loadDecompBin(alloc: std.mem.Allocator, path: []const u8) !SinglesMap {
+fn loadDecompBin(alloc: std.mem.Allocator, path: []const u8) !types.SinglesMap {
     const data = try std.fs.cwd().readFileAlloc(alloc, path, 32 * 1024);
     defer alloc.free(data);
 
@@ -232,7 +197,7 @@ fn loadDecompBin(alloc: std.mem.Allocator, path: []const u8) !SinglesMap {
         offset += val_bytes;
     }
 
-    return SinglesMap{
+    return types.SinglesMap{
         .map = map,
         .backing = vals,
         .alloc = alloc,
