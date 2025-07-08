@@ -1,6 +1,7 @@
 const std = @import("std");
 const AutoHashMap = std.AutoHashMap;
 
+const cea = @import("cea");
 const consts = @import("consts");
 const decode = @import("decode");
 const load = @import("load");
@@ -41,12 +42,12 @@ pub const Collator = struct {
         table: types.CollationTable,
         shifting: bool,
         tiebreak: bool,
-    ) Collator {
+    ) !Collator {
         const low_table: [183]u32 = if (table == .cldr) consts.LOW_CLDR else consts.LOW;
         const multi_path = if (table == .cldr) "bin/multi_cldr.bin" else "bin/multi.bin";
-        const single_path = if (table == .cldr) "bin/single_cldr.bin" else "bin/single.bin";
+        const single_path = if (table == .cldr) "bin/singles_cldr.bin" else "bin/singles.bin";
 
-        return Collator{
+        var collator = Collator{
             .alloc = alloc,
 
             .table = table,
@@ -62,10 +63,15 @@ pub const Collator = struct {
             .a_cea = std.ArrayList(u32).init(alloc),
             .b_cea = std.ArrayList(u32).init(alloc),
         };
+
+        try collator.a_cea.resize(32);
+        try collator.b_cea.resize(32);
+
+        return collator;
     }
 
-    pub fn initDefault(alloc: std.mem.Allocator) Collator {
-        return Collator.init(alloc, .cldr, true, true);
+    pub fn initDefault(alloc: std.mem.Allocator) !Collator {
+        return try Collator.init(alloc, .cldr, true, true);
     }
 
     pub fn deinit(self: *Collator) void {
@@ -106,17 +112,14 @@ pub const Collator = struct {
 
         if (std.mem.eql(u32, self.a_chars.items, self.b_chars.items)) {
             if (self.tiebreak) return util.cmp(u8, a, b);
-
             return util.cmp(u32, self.a_chars.items, self.b_chars.items);
         }
 
-        self.a_cea.clearRetainingCapacity();
-        self.b_cea.clearRetainingCapacity();
+        try cea.generateCEA(self, &self.a_cea, &self.a_chars);
+        try cea.generateCEA(self, &self.b_cea, &self.b_chars);
 
-        // To be continued...
-
-        std.debug.print("a: {any}\n", .{self.a_chars.items});
-        std.debug.print("b: {any}\n", .{self.b_chars.items});
+        std.debug.print("a: {any}\n", .{self.a_cea.items});
+        std.debug.print("b: {any}\n", .{self.b_cea.items});
 
         // Dummy return
         return util.cmp(u32, self.a_chars.items, self.b_chars.items);
@@ -131,44 +134,38 @@ pub const Collator = struct {
     //
 
     pub fn getCCC(self: *Collator, codepoint: u32) !?u8 {
-        if (self.ccc_map == null) {
+        if (self.ccc_map == null)
             self.ccc_map = try load.loadCCC(self.alloc, "bin/ccc.bin");
-        }
         return self.ccc_map.?.get(codepoint);
     }
 
     pub fn getDecomp(self: *Collator, codepoint: u32) !?[]const u32 {
-        if (self.decomp_map == null) {
+        if (self.decomp_map == null)
             self.decomp_map = try load.loadDecomp(self.alloc, "bin/decomp.bin");
-        }
         return self.decomp_map.?.map.get(codepoint);
     }
 
     pub fn getFCD(self: *Collator, codepoint: u32) !?u16 {
-        if (self.fcd_map == null) {
+        if (self.fcd_map == null)
             self.fcd_map = try load.loadFCD(self.alloc, "bin/fcd.bin");
-        }
         return self.fcd_map.?.get(codepoint);
     }
 
-    pub fn getMulti(self: *Collator, codepoint: u32) !?[]const u32 {
-        if (self.multi_map == null) {
+    pub fn getMulti(self: *Collator, codepoints: u64) !?[]const u32 {
+        if (self.multi_map == null)
             self.multi_map = try load.loadMulti(self.alloc, self.multi_path);
-        }
-        return self.multi_map.?.get(codepoint);
+        return self.multi_map.?.map.get(codepoints);
     }
 
     pub fn getSingle(self: *Collator, codepoint: u32) !?[]const u32 {
-        if (self.single_map == null) {
+        if (self.single_map == null)
             self.single_map = try load.loadSingle(self.alloc, self.single_path);
-        }
         return self.single_map.?.map.get(codepoint);
     }
 
     pub fn isVariable(self: *Collator, codepoint: u32) !bool {
-        if (self.variable_map == null) {
+        if (self.variable_map == null)
             self.variable_map = try load.loadVariable(self.alloc, "bin/variable.bin");
-        }
         return self.variable_map.?.get(codepoint) != null;
     }
 };

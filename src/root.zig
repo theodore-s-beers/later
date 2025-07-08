@@ -6,7 +6,7 @@ const Collator = @import("collator").Collator;
 test "Alice and Bob" {
     const allocator = std.testing.allocator;
 
-    var collator = Collator.initDefault(allocator);
+    var collator = try Collator.initDefault(allocator);
     defer collator.deinit();
 
     const a = "Alice";
