@@ -50,6 +50,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const sort_key_mod = b.createModule(.{
+        .root_source_file = b.path("src/sort_key.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const types_mod = b.createModule(.{
         .root_source_file = b.path("src/types.zig"),
         .target = target,
@@ -73,12 +79,15 @@ pub fn build(b: *std.Build) void {
     collator_mod.addImport("decode", decode_mod);
     collator_mod.addImport("load", load_mod);
     collator_mod.addImport("normalize", normalize_mod);
+    collator_mod.addImport("sort_key", sort_key_mod);
     collator_mod.addImport("types", types_mod);
     collator_mod.addImport("util", util_mod);
 
     load_mod.addImport("types", types_mod);
 
     normalize_mod.addImport("collator", collator_mod);
+
+    sort_key_mod.addImport("util", util_mod);
 
     util_mod.addImport("collator", collator_mod);
     util_mod.addImport("consts", consts_mod);
@@ -115,6 +124,9 @@ pub fn build(b: *std.Build) void {
     const normalize_unit_tests = b.addTest(.{ .root_module = normalize_mod });
     const run_normalize_unit_tests = b.addRunArtifact(normalize_unit_tests);
 
+    const sort_key_unit_tests = b.addTest(.{ .root_module = sort_key_mod });
+    const run_sort_key_unit_tests = b.addRunArtifact(sort_key_unit_tests);
+
     const types_unit_tests = b.addTest(.{ .root_module = types_mod });
     const run_types_unit_tests = b.addRunArtifact(types_unit_tests);
 
@@ -129,6 +141,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_decode_unit_tests.step);
     test_step.dependOn(&run_load_unit_tests.step);
     test_step.dependOn(&run_normalize_unit_tests.step);
+    test_step.dependOn(&run_sort_key_unit_tests.step);
     test_step.dependOn(&run_types_unit_tests.step);
     test_step.dependOn(&run_util_unit_tests.step);
 }

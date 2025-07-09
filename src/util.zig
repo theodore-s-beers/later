@@ -16,7 +16,16 @@ pub fn cccSequenceOk(coll: *Collator, test_range: []u32) !bool {
     return true;
 }
 
-pub fn cmp(comptime T: type, a: []const T, b: []const T) std.math.Order {
+pub fn cmp(comptime T: type, a: T, b: T) std.math.Order {
+    if (a < b)
+        return .lt
+    else if (a > b)
+        return .gt
+    else
+        return .eq;
+}
+
+pub fn cmpArray(comptime T: type, a: []const T, b: []const T) std.math.Order {
     if (std.mem.eql(T, a, b)) return .eq;
 
     const n = @min(a.len, b.len);

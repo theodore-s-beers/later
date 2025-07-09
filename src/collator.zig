@@ -6,6 +6,7 @@ const consts = @import("consts");
 const decode = @import("decode");
 const load = @import("load");
 const normalize = @import("normalize");
+const sort_key = @import("sort_key");
 const types = @import("types");
 const util = @import("util");
 
@@ -111,20 +112,17 @@ pub const Collator = struct {
         try normalize.makeNFD(self, &self.b_chars);
 
         if (std.mem.eql(u32, self.a_chars.items, self.b_chars.items)) {
-            if (self.tiebreak) return util.cmp(u8, a, b);
-            return util.cmp(u32, self.a_chars.items, self.b_chars.items);
+            if (self.tiebreak) return util.cmpArray(u8, a, b);
+            return util.cmpArray(u32, self.a_chars.items, self.b_chars.items);
         }
 
         try cea.generateCEA(self, &self.a_cea, &self.a_chars);
         try cea.generateCEA(self, &self.b_cea, &self.b_chars);
 
-        // To be continued...
+        const comparison = sort_key.compareIncremental(self.a_cea.items, self.b_cea.items, self.shifting);
+        if (comparison == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
 
-        std.debug.print("a: {any}\n", .{self.a_cea.items});
-        std.debug.print("b: {any}\n", .{self.b_cea.items});
-
-        // Dummy return
-        return util.cmp(u32, self.a_chars.items, self.b_chars.items);
+        return comparison;
     }
 
     pub fn collate(self: *Collator, a: []const u8, b: []const u8) std.math.Order {
