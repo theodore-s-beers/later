@@ -3,15 +3,12 @@ const consts = @import("consts");
 
 const Collator = @import("collator").Collator;
 
-pub fn cccSequenceOk(collator: *Collator, test_range: []u32) !bool {
+pub fn cccSequenceOk(coll: *Collator, test_range: []u32) !bool {
     var max_ccc: u8 = 0;
 
     for (test_range) |elem| {
-        const ccc = try collator.getCCC(elem) orelse 0;
-
-        if (ccc == 0 or ccc <= max_ccc) {
-            return false;
-        }
+        const ccc = try coll.getCCC(elem) orelse 0;
+        if (ccc == 0 or ccc <= max_ccc) return false;
 
         max_ccc = ccc;
     }
@@ -54,12 +51,11 @@ pub fn fillWeights(
     }
 }
 
-pub fn growVec(cea: *std.ArrayList(u32), i: usize) !void {
+pub fn growList(cea: *std.ArrayList(u32), i: usize) !void {
     const l = cea.items.len;
 
-    if (l - i < 10) {
-        try cea.resize(l * 2);
-    }
+    // U+FDFA has 18 sets of collation weights
+    if (l - i < 18) try cea.resize(l * 2);
 }
 
 pub fn handleImplicitWeights(cea: *std.ArrayList(u32), cp: u32, i: *usize) void {
@@ -77,11 +73,10 @@ pub fn handleLowWeights(
     shifting: bool,
     last_variable: *bool,
 ) void {
-    if (shifting) {
-        cea.items[i.*] = shiftWeights(weights, last_variable);
-    } else {
-        cea.items[i.*] = weights;
-    }
+    cea.items[i.*] = switch (shifting) {
+        true => shiftWeights(weights, last_variable),
+        false => weights,
+    };
 
     i.* += 1;
 }
@@ -92,41 +87,25 @@ pub fn implicitA(cp: u32) u32 {
             break :blk 0xFBC0 + (cp >> 15);
         }
 
-        // CJK2
         if ((cp >= 0x3400 and cp <= 0x4DBF) or
             (cp >= 0x20000 and cp <= 0x2A6DF) or
             (cp >= 0x2A700 and cp <= 0x2EE5D) or
             (cp >= 0x30000 and cp <= 0x323AF))
         {
-            break :blk 0xFB80 + (cp >> 15);
+            break :blk 0xFB80 + (cp >> 15); // CJK2
         }
 
-        // CJK1
-        if ((cp >= 0x4E00 and cp <= 0x9FFF) or
-            (cp >= 0xF900 and cp <= 0xFAFF))
-        {
-            break :blk 0xFB40 + (cp >> 15);
+        if ((cp >= 0x4E00 and cp <= 0x9FFF) or (cp >= 0xF900 and cp <= 0xFAFF)) {
+            break :blk 0xFB40 + (cp >> 15); // CJK1
         }
 
-        // Tangut
-        if ((cp >= 0x17000 and cp <= 0x18AFF) or
-            (cp >= 0x18D00 and cp <= 0x18D8F))
-        {
-            break :blk 0xFB00;
+        if ((cp >= 0x17000 and cp <= 0x18AFF) or (cp >= 0x18D00 and cp <= 0x18D8F)) {
+            break :blk 0xFB00; // Tangut
         }
 
-        // Khitan
-        if (cp >= 0x18B00 and cp <= 0x18CFF) {
-            break :blk 0xFB02;
-        }
-
-        // Nushu
-        if (cp >= 0x1B170 and cp <= 0x1B2FF) {
-            break :blk 0xFB01;
-        }
-
-        // Unassigned
-        break :blk 0xFBC0 + (cp >> 15);
+        if (cp >= 0x18B00 and cp <= 0x18CFF) break :blk 0xFB02; // Khitan
+        if (cp >= 0x1B170 and cp <= 0x1B2FF) break :blk 0xFB01; // Nushu
+        break :blk 0xFBC0 + (cp >> 15); // Unassigned
     };
 
     return packWeights(false, @intCast(aaaa), 32, 2);
@@ -134,34 +113,19 @@ pub fn implicitA(cp: u32) u32 {
 
 pub fn implicitB(cp: u32) u32 {
     var bbbb = blk: {
-        if (std.mem.indexOfScalar(u32, &consts.INCLUDED_UNASSIGNED, cp)) |_| {
+        if (std.mem.indexOfScalar(u32, &consts.INCLUDED_UNASSIGNED, cp)) |_|
             break :blk cp & 0x7FFF;
+
+        if ((cp >= 0x17000 and cp <= 0x18AFF) or (cp >= 0x18D00 and cp <= 0x18D8F)) {
+            break :blk cp - 0x17000; // Tangut
         }
 
-        // Tangut
-        if ((cp >= 0x17000 and cp <= 0x18AFF) or
-            (cp >= 0x18D00 and cp <= 0x18D8F))
-        {
-            break :blk cp - 0x17000;
-        }
-
-        // Khitan
-        if (cp >= 0x18B00 and cp <= 0x18CFF) {
-            break :blk cp - 0x18B00;
-        }
-
-        // Nushu
-        if (cp >= 0x1B170 and cp <= 0x1B2FF) {
-            break :blk cp - 0x1B170;
-        }
-
-        // CJK1, CJK2, unass.
-        break :blk cp & 0x7FFF;
+        if (cp >= 0x18B00 and cp <= 0x18CFF) break :blk cp - 0x18B00; // Khitan
+        if (cp >= 0x1B170 and cp <= 0x1B2FF) break :blk cp - 0x1B170; // Nushu
+        break :blk cp & 0x7FFF; // CJK1, CJK2, unass.
     };
 
-    // BBBB always gets bitwise ORed with this value
-    bbbb |= 0x8000;
-
+    bbbb |= 0x8000; // BBBB always bitwise ORed with this value
     return packWeights(false, @intCast(bbbb), 0, 0);
 }
 

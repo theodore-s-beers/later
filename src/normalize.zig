@@ -50,14 +50,14 @@ const JAMO_LV = [_]u32{
     0xD750, 0xD76C, 0xD788,
 };
 
-pub fn makeNFD(collator: *Collator, input: *std.ArrayList(u32)) !void {
-    if (try fcd(collator, input.items)) return;
+pub fn makeNFD(coll: *Collator, input: *std.ArrayList(u32)) !void {
+    if (try fcd(coll, input.items)) return;
 
-    try decompose(collator, input);
-    try reorder(collator, input);
+    try decompose(coll, input);
+    try reorder(coll, input);
 }
 
-fn fcd(collator: *Collator, input: []const u32) !bool {
+fn fcd(coll: *Collator, input: []const u32) !bool {
     var prev_trail_cc: u8 = 0;
 
     for (input) |c| {
@@ -66,23 +66,19 @@ fn fcd(collator: *Collator, input: []const u32) !bool {
             continue;
         }
 
-        if (c == 0x0F81 or (0xAC00 <= c and c <= 0xD7A3)) {
-            return false;
-        }
+        if (c == 0x0F81 or (0xAC00 <= c and c <= 0xD7A3)) return false;
 
         const lead_cc, const trail_cc = blk: {
-            if (try collator.getFCD(c)) |vals| {
+            if (try coll.getFCD(c)) |vals| {
                 const bytes = std.mem.toBytes(std.mem.bigToNative(u16, vals));
                 break :blk .{ bytes[0], bytes[1] };
             } else {
-                const cc: u8 = try collator.getCCC(c) orelse 0;
+                const cc: u8 = try coll.getCCC(c) orelse 0;
                 break :blk .{ cc, cc };
             }
         };
 
-        if (lead_cc != 0 and lead_cc < prev_trail_cc) {
-            return false;
-        }
+        if (lead_cc != 0 and lead_cc < prev_trail_cc) return false;
 
         prev_trail_cc = trail_cc;
     }
@@ -90,7 +86,7 @@ fn fcd(collator: *Collator, input: []const u32) !bool {
     return true;
 }
 
-fn decompose(collator: *Collator, input: *std.ArrayList(u32)) !void {
+fn decompose(coll: *Collator, input: *std.ArrayList(u32)) !void {
     var i: usize = 0;
 
     while (i < input.items.len) {
@@ -102,14 +98,14 @@ fn decompose(collator: *Collator, input: *std.ArrayList(u32)) !void {
         }
 
         if (0xAC00 <= code_point and code_point <= 0xD7A3) {
-            const rep = try decomposeJamo(collator.alloc, code_point);
+            const rep = try decomposeJamo(coll.alloc, code_point);
             try input.replaceRange(i, 1, rep.items);
 
             i += rep.items.len;
             continue;
         }
 
-        if (try collator.getDecomp(code_point)) |decomp| {
+        if (try coll.getDecomp(code_point)) |decomp| {
             try input.replaceRange(i, 1, decomp);
             i += decomp.len;
             continue;
@@ -152,7 +148,7 @@ fn decomposeJamo(alloc: std.mem.Allocator, s: u32) !std.ArrayList(u32) {
     }
 }
 
-fn reorder(collator: *Collator, input: *std.ArrayList(u32)) !void {
+fn reorder(coll: *Collator, input: *std.ArrayList(u32)) !void {
     var n = input.items.len;
 
     while (n > 1) {
@@ -160,13 +156,13 @@ fn reorder(collator: *Collator, input: *std.ArrayList(u32)) !void {
         var i: usize = 1;
 
         while (i < n) {
-            const ccc_b = try collator.getCCC(input.items[i]) orelse 0;
+            const ccc_b = try coll.getCCC(input.items[i]) orelse 0;
             if (ccc_b == 0) {
                 i += 2;
                 continue;
             }
 
-            const ccc_a = try collator.getCCC(input.items[i - 1]) orelse 0;
+            const ccc_a = try coll.getCCC(input.items[i - 1]) orelse 0;
             if (ccc_a == 0 or ccc_a <= ccc_b) {
                 i += 1;
                 continue;

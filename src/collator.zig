@@ -47,7 +47,7 @@ pub const Collator = struct {
         const multi_path = if (table == .cldr) "bin/multi_cldr.bin" else "bin/multi.bin";
         const single_path = if (table == .cldr) "bin/singles_cldr.bin" else "bin/singles.bin";
 
-        var collator = Collator{
+        var coll = Collator{
             .alloc = alloc,
 
             .table = table,
@@ -64,10 +64,10 @@ pub const Collator = struct {
             .b_cea = std.ArrayList(u32).init(alloc),
         };
 
-        try collator.a_cea.resize(32);
-        try collator.b_cea.resize(32);
+        try coll.a_cea.resize(32);
+        try coll.b_cea.resize(32);
 
-        return collator;
+        return coll;
     }
 
     pub fn initDefault(alloc: std.mem.Allocator) !Collator {
@@ -117,6 +117,8 @@ pub const Collator = struct {
 
         try cea.generateCEA(self, &self.a_cea, &self.a_chars);
         try cea.generateCEA(self, &self.b_cea, &self.b_chars);
+
+        // To be continued...
 
         std.debug.print("a: {any}\n", .{self.a_cea.items});
         std.debug.print("b: {any}\n", .{self.b_cea.items});

@@ -4,13 +4,13 @@ const AutoHashMap = std.AutoHashMap;
 const Collator = @import("collator").Collator;
 
 test "Alice and Bob" {
-    const allocator = std.testing.allocator;
+    const alloc = std.testing.allocator;
 
-    var collator = try Collator.initDefault(allocator);
-    defer collator.deinit();
+    var coll = try Collator.initDefault(alloc);
+    defer coll.deinit();
 
     const a = "Alice";
     const b = "Bob";
 
-    try std.testing.expect(collator.collate(a, b) == .lt);
+    try std.testing.expect(coll.collate(a, b) == .lt);
 }
