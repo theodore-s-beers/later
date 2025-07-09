@@ -38,7 +38,7 @@ pub const Collator = struct {
     // Init, deinit
     //
 
-    fn init(
+    pub fn init(
         alloc: std.mem.Allocator,
         table: types.CollationTable,
         shifting: bool,
