@@ -55,7 +55,8 @@ pub fn growList(cea: *std.ArrayList(u32), i: usize) !void {
     const l = cea.items.len;
 
     // U+FDFA has 18 sets of collation weights
-    if (l - i < 18) try cea.resize(l * 2);
+    // We also need one spot for the sentinel value; round up to 20
+    if (l - i < 20) try cea.resize(l * 2);
 }
 
 pub fn handleImplicitWeights(cea: *std.ArrayList(u32), cp: u32, i: *usize) void {

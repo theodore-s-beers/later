@@ -64,8 +64,8 @@ pub const Collator = struct {
             .b_cea = std.ArrayList(u32).init(alloc),
         };
 
-        try coll.a_cea.resize(32);
-        try coll.b_cea.resize(32);
+        try coll.a_cea.resize(64);
+        try coll.b_cea.resize(64);
 
         return coll;
     }
