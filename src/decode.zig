@@ -62,10 +62,23 @@ inline fn decode(state: *u8, cp: *u32, byte: u8) u8 {
     cp.* = if (state.* != UTF8_ACCEPT)
         (byte & 0x3F) | (cp.* << 6)
     else
-        ((@as(u8, 0xFF) >> @truncate(class)) & byte);
+        (@as(u32, 0xFF) >> @intCast(class)) & byte;
 
     const idx = @as(usize, 256) + state.* + class;
     state.* = utf8d[idx];
 
     return state.*;
+}
+
+test "decode 4-byte code point" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    const input = [_]u8{ 240, 155, 178, 158 }; // 0x1BC9E
+
+    const result = try bytesToCodepoints(alloc, &input);
+    defer alloc.free(result);
+
+    try testing.expectEqual(@as(usize, 1), result.len);
+    try testing.expectEqual(@as(u32, 0x1BC9E), result[0]);
 }
