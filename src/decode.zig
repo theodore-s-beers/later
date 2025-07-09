@@ -1,8 +1,8 @@
 const std = @import("std");
 
-pub fn bytesToCodepoints(alloc: std.mem.Allocator, input: []const u8) ![]u32 {
-    var codepoints = try std.ArrayList(u32).initCapacity(alloc, input.len);
-    errdefer codepoints.deinit();
+pub fn bytesToCodepoints(codepoints: *std.ArrayList(u32), input: []const u8) !void {
+    codepoints.clearRetainingCapacity();
+    try codepoints.ensureTotalCapacity(input.len);
 
     var state: u8 = UTF8_ACCEPT;
     var codepoint: u32 = 0;
@@ -20,8 +20,6 @@ pub fn bytesToCodepoints(alloc: std.mem.Allocator, input: []const u8) ![]u32 {
 
     // If we ended in an incomplete sequence, emit replacement
     if (state != UTF8_ACCEPT) codepoints.appendAssumeCapacity(REPLACEMENT);
-
-    return codepoints.toOwnedSlice();
 }
 
 const UTF8_ACCEPT: u8 = 0;
@@ -76,9 +74,11 @@ test "decode 4-byte code point" {
 
     const input = [_]u8{ 240, 155, 178, 158 }; // 0x1BC9E
 
-    const result = try bytesToCodepoints(alloc, &input);
-    defer alloc.free(result);
+    var result = std.ArrayList(u32).init(alloc);
+    defer result.deinit();
 
-    try testing.expectEqual(@as(usize, 1), result.len);
-    try testing.expectEqual(@as(u32, 0x1BC9E), result[0]);
+    try bytesToCodepoints(&result, &input);
+
+    try testing.expectEqual(@as(usize, 1), result.items.len);
+    try testing.expectEqual(@as(u32, 0x1BC9E), result.items[0]);
 }

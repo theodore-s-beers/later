@@ -96,17 +96,9 @@ pub const Collator = struct {
     fn collateFallible(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
 
-        const a_codepoints = try decode.bytesToCodepoints(self.alloc, a);
-        defer self.alloc.free(a_codepoints);
-
-        const b_codepoints = try decode.bytesToCodepoints(self.alloc, b);
-        defer self.alloc.free(b_codepoints);
-
-        self.a_chars.clearRetainingCapacity();
-        self.b_chars.clearRetainingCapacity();
-
-        try self.a_chars.appendSlice(a_codepoints);
-        try self.b_chars.appendSlice(b_codepoints);
+        // Decode function clears input list
+        try decode.bytesToCodepoints(&self.a_chars, a);
+        try decode.bytesToCodepoints(&self.b_chars, b);
 
         try normalize.makeNFD(self, &self.a_chars);
         try normalize.makeNFD(self, &self.b_chars);
