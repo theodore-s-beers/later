@@ -99,6 +99,8 @@ fn decompose(coll: *Collator, input: *std.ArrayList(u32)) !void {
 
         if (0xAC00 <= code_point and code_point <= 0xD7A3) {
             const rep = try decomposeJamo(coll.alloc, code_point);
+            defer rep.deinit();
+
             try input.replaceRange(i, 1, rep.items);
 
             i += rep.items.len;
