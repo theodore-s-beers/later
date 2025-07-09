@@ -4,6 +4,13 @@ const AutoHashMap = std.AutoHashMap;
 const Collator = @import("collator").Collator;
 
 fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) !void {
+    const start_time = std.time.microTimestamp();
+    defer {
+        const end_time = std.time.microTimestamp();
+        const duration_ms = @as(f64, @floatFromInt(end_time - start_time)) / 1_000.0;
+        std.debug.print("{s}: {d:.2}ms\n", .{ path, duration_ms });
+    }
+
     const test_data = try std.fs.cwd().readFileAlloc(alloc, path, 4 * 1024 * 1024);
     defer alloc.free(test_data);
 
