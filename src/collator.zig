@@ -93,7 +93,7 @@ pub const Collator = struct {
     // Collation
     //
 
-    fn collateFallible(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
+    pub fn collateFallible(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
 
         // Decode function clears input list

@@ -1,9 +1,9 @@
 const std = @import("std");
 const AutoHashMap = std.AutoHashMap;
 
-const Collator = @import("collator").Collator;
+pub const Collator = @import("collator").Collator;
 
-fn collateComparator(context: *Collator, a: []const u8, b: []const u8) bool {
+pub fn collateComparator(context: *Collator, a: []const u8, b: []const u8) bool {
     return context.collate(a, b) == .lt;
 }
 
