@@ -3,6 +3,10 @@ const AutoHashMap = std.AutoHashMap;
 
 const Collator = @import("collator").Collator;
 
+fn collateComparator(context: *Collator, a: []const u8, b: []const u8) bool {
+    return context.collate(a, b) == .lt;
+}
+
 fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) !void {
     const start_time = std.time.microTimestamp();
     defer {
@@ -81,4 +85,36 @@ test "ducet shifted" {
     defer coll.deinit();
 
     try conformance(alloc, "test-data/CollationTest_SHIFTED_SHORT.txt", &coll);
+}
+
+test "sort multilingual list of names" {
+    const alloc = std.testing.allocator;
+
+    var coll = try Collator.initDefault(alloc);
+    defer coll.deinit();
+
+    var input = [_][]const u8{
+        "چنگیز",
+        "Éloi",
+        "Ötzi",
+        "Melissa",
+        "صدام",
+        "Mélissa",
+        "Overton",
+        "Elrond",
+    };
+
+    const expected = [_][]const u8{
+        "Éloi",
+        "Elrond",
+        "Melissa",
+        "Mélissa",
+        "Ötzi",
+        "Overton",
+        "چنگیز",
+        "صدام",
+    };
+
+    std.mem.sort([]const u8, &input, &coll, collateComparator);
+    try std.testing.expectEqualSlices([]const u8, &expected, &input);
 }
