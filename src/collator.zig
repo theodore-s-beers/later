@@ -18,8 +18,6 @@ pub const Collator = struct {
     tiebreak: bool = true,
 
     low_table: [183]u32,
-    multi_path: []const u8,
-    single_path: []const u8,
 
     a_chars: std.ArrayList(u32),
     b_chars: std.ArrayList(u32),
@@ -27,12 +25,13 @@ pub const Collator = struct {
     a_cea: std.ArrayList(u32),
     b_cea: std.ArrayList(u32),
 
+    mutex: std.Thread.Mutex = .{},
+
     ccc_map: ?AutoHashMap(u32, u8) = null,
     decomp_map: ?types.SinglesMap = null,
     fcd_map: ?AutoHashMap(u32, u16) = null,
     multi_map: ?types.MultiMap = null,
     single_map: ?types.SinglesMap = null,
-    variable_map: ?AutoHashMap(u32, void) = null,
 
     //
     // Init, deinit
@@ -45,8 +44,6 @@ pub const Collator = struct {
         tiebreak: bool,
     ) !Collator {
         const low_table: [183]u32 = if (table == .cldr) consts.LOW_CLDR else consts.LOW;
-        const multi_path = if (table == .cldr) "bin/multi_cldr.bin" else "bin/multi.bin";
-        const single_path = if (table == .cldr) "bin/singles_cldr.bin" else "bin/singles.bin";
 
         var coll = Collator{
             .alloc = alloc,
@@ -56,8 +53,6 @@ pub const Collator = struct {
             .tiebreak = tiebreak,
 
             .low_table = low_table,
-            .multi_path = multi_path,
-            .single_path = single_path,
 
             .a_chars = std.ArrayList(u32).init(alloc),
             .b_chars = std.ArrayList(u32).init(alloc),
@@ -86,7 +81,6 @@ pub const Collator = struct {
         if (self.fcd_map) |*map| map.deinit();
         if (self.multi_map) |*map| map.deinit();
         if (self.single_map) |*map| map.deinit();
-        if (self.variable_map) |*map| map.deinit();
     }
 
     //
@@ -126,38 +120,54 @@ pub const Collator = struct {
     //
 
     pub fn getCCC(self: *Collator, codepoint: u32) !?u8 {
-        if (self.ccc_map == null)
-            self.ccc_map = try load.loadCCC(self.alloc, "bin/ccc.bin");
+        if (self.ccc_map) |*map| return map.get(codepoint);
+
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
+        if (self.ccc_map == null) self.ccc_map = try load.loadCCC(self.alloc);
         return self.ccc_map.?.get(codepoint);
     }
 
     pub fn getDecomp(self: *Collator, codepoint: u32) !?[]const u32 {
-        if (self.decomp_map == null)
-            self.decomp_map = try load.loadDecomp(self.alloc, "bin/decomp.bin");
+        if (self.decomp_map) |*map| return map.map.get(codepoint);
+
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
+        if (self.decomp_map == null) self.decomp_map = try load.loadDecomp(self.alloc);
         return self.decomp_map.?.map.get(codepoint);
     }
 
     pub fn getFCD(self: *Collator, codepoint: u32) !?u16 {
-        if (self.fcd_map == null)
-            self.fcd_map = try load.loadFCD(self.alloc, "bin/fcd.bin");
+        if (self.fcd_map) |*map| return map.get(codepoint);
+
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
+        if (self.fcd_map == null) self.fcd_map = try load.loadFCD(self.alloc);
         return self.fcd_map.?.get(codepoint);
     }
 
     pub fn getMulti(self: *Collator, codepoints: u64) !?[]const u32 {
+        if (self.multi_map) |*map| return map.map.get(codepoints);
+
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
         if (self.multi_map == null)
-            self.multi_map = try load.loadMulti(self.alloc, self.multi_path);
+            self.multi_map = try load.loadMulti(self.alloc, self.table == .cldr);
         return self.multi_map.?.map.get(codepoints);
     }
 
     pub fn getSingle(self: *Collator, codepoint: u32) !?[]const u32 {
-        if (self.single_map == null)
-            self.single_map = try load.loadSingle(self.alloc, self.single_path);
-        return self.single_map.?.map.get(codepoint);
-    }
+        if (self.single_map) |*map| return map.map.get(codepoint);
 
-    pub fn isVariable(self: *Collator, codepoint: u32) !bool {
-        if (self.variable_map == null)
-            self.variable_map = try load.loadVariable(self.alloc, "bin/variable.bin");
-        return self.variable_map.?.get(codepoint) != null;
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
+        if (self.single_map == null)
+            self.single_map = try load.loadSingle(self.alloc, self.table == .cldr);
+        return self.single_map.?.map.get(codepoint);
     }
 };
