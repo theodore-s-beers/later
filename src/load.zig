@@ -1,12 +1,17 @@
 const std = @import("std");
 const types = @import("types");
 
-pub fn loadCCC(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32, u8) {
-    const data = try std.fs.cwd().readFileAlloc(alloc, path, 8 * 1024);
-    defer alloc.free(data);
+const ccc_data = @embedFile("bin/ccc.bin");
+const decomp_data = @embedFile("bin/decomp.bin");
+const fcd_data = @embedFile("bin/fcd.bin");
+const multi_data = @embedFile("bin/multi.bin");
+const multi_cldr_data = @embedFile("bin/multi_cldr.bin");
+const singles_data = @embedFile("bin/singles.bin");
+const singles_cldr_data = @embedFile("bin/singles_cldr.bin");
 
+pub fn loadCCC(alloc: std.mem.Allocator) !std.AutoHashMap(u32, u8) {
     const entry_size = @sizeOf(u32) + @sizeOf(u8);
-    const count: u32 = @intCast(data.len / entry_size);
+    const count: u32 = @intCast(ccc_data.len / entry_size);
 
     var map = std.AutoHashMap(u32, u8).init(alloc);
     errdefer map.deinit();
@@ -16,9 +21,9 @@ pub fn loadCCC(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32,
     for (0..count) |i| {
         const offset = i * entry_size;
 
-        const key_bytes = data[offset..][0..@sizeOf(u32)];
+        const key_bytes = ccc_data[offset..][0..@sizeOf(u32)];
         const key = std.mem.readInt(u32, key_bytes, .little);
-        const value = data[offset + @sizeOf(u32)];
+        const value = ccc_data[offset + @sizeOf(u32)];
 
         map.putAssumeCapacityNoClobber(key, value);
     }
@@ -26,13 +31,10 @@ pub fn loadCCC(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32,
     return map;
 }
 
-pub fn loadDecomp(alloc: std.mem.Allocator, path: []const u8) !types.SinglesMap {
-    const data = try std.fs.cwd().readFileAlloc(alloc, path, 32 * 1024);
-    defer alloc.free(data);
-
+pub fn loadDecomp(alloc: std.mem.Allocator) !types.SinglesMap {
     // Map header
-    const count = std.mem.readInt(u32, data[0..@sizeOf(u32)], .little);
-    const payload = data[@sizeOf(u32)..];
+    const count = std.mem.readInt(u32, decomp_data[0..@sizeOf(u32)], .little);
+    const payload = decomp_data[@sizeOf(u32)..];
 
     const entry_header_size = @sizeOf(u32) + @sizeOf(u8);
     const val_count = (payload.len - (count * entry_header_size)) / @sizeOf(u32);
@@ -80,12 +82,9 @@ pub fn loadDecomp(alloc: std.mem.Allocator, path: []const u8) !types.SinglesMap 
     };
 }
 
-pub fn loadFCD(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32, u16) {
-    const data = try std.fs.cwd().readFileAlloc(alloc, path, 8 * 1024);
-    defer alloc.free(data);
-
+pub fn loadFCD(alloc: std.mem.Allocator) !std.AutoHashMap(u32, u16) {
     const entry_size = @sizeOf(u32) + @sizeOf(u16);
-    const count: u32 = @intCast(data.len / entry_size);
+    const count: u32 = @intCast(fcd_data.len / entry_size);
 
     var map = std.AutoHashMap(u32, u16).init(alloc);
     errdefer map.deinit();
@@ -93,11 +92,11 @@ pub fn loadFCD(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32,
     try map.ensureTotalCapacity(count);
 
     var offset: usize = 0;
-    while (offset < data.len) : (offset += entry_size) {
-        const key_bytes = data[offset..][0..@sizeOf(u32)];
+    while (offset < fcd_data.len) : (offset += entry_size) {
+        const key_bytes = fcd_data[offset..][0..@sizeOf(u32)];
         const key = std.mem.readInt(u32, key_bytes, .little);
 
-        const value_bytes = data[offset + @sizeOf(u32) ..][0..@sizeOf(u16)];
+        const value_bytes = fcd_data[offset + @sizeOf(u32) ..][0..@sizeOf(u16)];
         const value = std.mem.readInt(u16, value_bytes, .little);
 
         map.putAssumeCapacityNoClobber(key, value);
@@ -106,9 +105,8 @@ pub fn loadFCD(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32,
     return map;
 }
 
-pub fn loadMulti(alloc: std.mem.Allocator, path: []const u8) !types.MultiMap {
-    const data = try std.fs.cwd().readFileAlloc(alloc, path, 32 * 1024);
-    defer alloc.free(data);
+pub fn loadMulti(alloc: std.mem.Allocator, cldr: bool) !types.MultiMap {
+    const data = if (cldr) multi_cldr_data else multi_data;
 
     // Map header
     const count = std.mem.readInt(u16, data[0..@sizeOf(u16)], .little);
@@ -160,9 +158,8 @@ pub fn loadMulti(alloc: std.mem.Allocator, path: []const u8) !types.MultiMap {
     };
 }
 
-pub fn loadSingle(alloc: std.mem.Allocator, path: []const u8) !types.SinglesMap {
-    const data = try std.fs.cwd().readFileAlloc(alloc, path, 512 * 1024);
-    defer alloc.free(data);
+pub fn loadSingle(alloc: std.mem.Allocator, cldr: bool) !types.SinglesMap {
+    const data = if (cldr) singles_cldr_data else singles_data;
 
     const count = std.mem.readInt(u32, data[0..@sizeOf(u32)], .little); // Map header
     const payload = data[@sizeOf(u32)..];
@@ -211,27 +208,4 @@ pub fn loadSingle(alloc: std.mem.Allocator, path: []const u8) !types.SinglesMap 
         .backing = vals,
         .alloc = alloc,
     };
-}
-
-pub fn loadVariable(alloc: std.mem.Allocator, path: []const u8) !std.AutoHashMap(u32, void) {
-    const data = try std.fs.cwd().readFileAlloc(alloc, path, 64 * 1024);
-    defer alloc.free(data);
-
-    const count: usize = data.len / @sizeOf(u32);
-
-    var map = std.AutoHashMap(u32, void).init(alloc);
-    errdefer map.deinit();
-
-    try map.ensureTotalCapacity(@intCast(count));
-
-    for (0..count) |i| {
-        const offset = i * @sizeOf(u32);
-
-        const bytes = data[offset..][0..@sizeOf(u32)];
-        const code_point = std.mem.readInt(u32, bytes, .little);
-
-        map.putAssumeCapacityNoClobber(code_point, {});
-    }
-
-    return map;
 }
