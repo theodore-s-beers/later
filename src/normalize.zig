@@ -98,12 +98,10 @@ fn decompose(coll: *Collator, input: *std.ArrayList(u32)) !void {
         }
 
         if (0xAC00 <= code_point and code_point <= 0xD7A3) {
-            const rep = try decomposeJamo(coll.alloc, code_point);
-            defer rep.deinit();
+            const len, const arr = decomposeJamo(code_point);
+            try input.replaceRange(i, 1, arr[0..len]);
 
-            try input.replaceRange(i, 1, rep.items);
-
-            i += rep.items.len;
+            i += len;
             continue;
         }
 
@@ -117,7 +115,7 @@ fn decompose(coll: *Collator, input: *std.ArrayList(u32)) !void {
     }
 }
 
-fn decomposeJamo(alloc: std.mem.Allocator, s: u32) !std.ArrayList(u32) {
+fn decomposeJamo(s: u32) struct { usize, [3]u32 } {
     const s_index = s - S_BASE;
 
     const lv = std.mem.indexOfScalar(u32, &JAMO_LV, s) != null;
@@ -125,28 +123,16 @@ fn decomposeJamo(alloc: std.mem.Allocator, s: u32) !std.ArrayList(u32) {
     const l_index = s_index / N_COUNT;
     const v_index = (s_index % N_COUNT) / T_COUNT;
 
+    const l_part = L_BASE + l_index;
+    const v_part = V_BASE + v_index;
+
     if (lv) {
-        const l_part = L_BASE + l_index;
-        const v_part = V_BASE + v_index;
-
-        var result = try std.ArrayList(u32).initCapacity(alloc, 2);
-        try result.append(l_part);
-        try result.append(v_part);
-
-        return result;
+        return .{ 2, [3]u32{ l_part, v_part, 0 } };
     } else {
         const t_index = s_index % T_COUNT;
-
-        const l_part = L_BASE + l_index;
-        const v_part = V_BASE + v_index;
         const t_part = T_BASE + t_index;
 
-        var result = try std.ArrayList(u32).initCapacity(alloc, 3);
-        try result.append(l_part);
-        try result.append(v_part);
-        try result.append(t_part);
-
-        return result;
+        return .{ 3, [3]u32{ l_part, v_part, t_part } };
     }
 }
 
