@@ -30,7 +30,7 @@ pub fn generateCEA(
         // one set of weights. Then we fill in the weights, shifting if necessary. This is the path
         // that catches (most) ASCII characters present in not-completely-ASCII strings.
         //
-        if (left_val < 0x00B7 and left_val != 0x006C and left_val != 0x004C) {
+        if (left_val < 0xB7 and left_val != 0x6C and left_val != 0x4C) {
             const weights = coll.low_table[left_val]; // Guaranteed to succeed
             util.handleLowWeights(cea, weights, &cea_idx, coll.shifting, &last_variable);
             left += 1;

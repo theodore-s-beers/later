@@ -61,7 +61,7 @@ fn fcd(coll: *Collator, input: []const u32) !bool {
     var prev_trail_cc: u8 = 0;
 
     for (input) |c| {
-        if (c < 0x00C0) {
+        if (c < 0xC0) {
             prev_trail_cc = 0;
             continue;
         }
@@ -92,7 +92,7 @@ fn decompose(coll: *Collator, input: *std.ArrayList(u32)) !void {
     while (i < input.items.len) {
         const code_point = input.items[i];
 
-        if (code_point < 0x00C0) {
+        if (code_point < 0xC0) {
             i += 1;
             continue;
         }
