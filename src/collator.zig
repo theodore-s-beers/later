@@ -98,11 +98,13 @@ pub const Collator = struct {
         try decode.bytesToCodepoints(&self.a_chars, a);
         try decode.bytesToCodepoints(&self.b_chars, b);
 
+        // ASCII fast path
         if (ascii.tryAscii(self.a_chars.items, self.b_chars.items)) |ord| return ord;
 
         try normalize.makeNFD(self, &self.a_chars);
         try normalize.makeNFD(self, &self.b_chars);
 
+        // Equal after normalization?
         if (std.mem.eql(u32, self.a_chars.items, self.b_chars.items)) {
             if (self.tiebreak) return util.cmpArray(u8, a, b);
             return util.cmpArray(u32, self.a_chars.items, self.b_chars.items);
@@ -110,6 +112,7 @@ pub const Collator = struct {
 
         const offset = try prefix.findOffset(self); // Default 0
 
+        // Prefix trimming may reveal that one list is a prefix of the other
         if (self.a_chars.items[offset..].len == 0 or self.b_chars.items[offset..].len == 0) {
             return util.cmp(usize, self.a_chars.items.len, self.b_chars.items.len);
         }
