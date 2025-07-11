@@ -8,6 +8,7 @@ const multi_data = @embedFile("bin/multi.bin");
 const multi_cldr_data = @embedFile("bin/multi_cldr.bin");
 const singles_data = @embedFile("bin/singles.bin");
 const singles_cldr_data = @embedFile("bin/singles_cldr.bin");
+const variable_data = @embedFile("bin/variable.bin");
 
 pub fn loadCCC(alloc: std.mem.Allocator) !std.AutoHashMap(u32, u8) {
     const entry_size = @sizeOf(u32) + @sizeOf(u8);
@@ -208,4 +209,24 @@ pub fn loadSingle(alloc: std.mem.Allocator, cldr: bool) !types.SinglesMap {
         .backing = vals,
         .alloc = alloc,
     };
+}
+
+pub fn loadVariable(alloc: std.mem.Allocator) !std.AutoHashMap(u32, void) {
+    const count: usize = variable_data.len / @sizeOf(u32);
+
+    var map = std.AutoHashMap(u32, void).init(alloc);
+    errdefer map.deinit();
+
+    try map.ensureTotalCapacity(@intCast(count));
+
+    for (0..count) |i| {
+        const offset = i * @sizeOf(u32);
+
+        const bytes = variable_data[offset..][0..@sizeOf(u32)];
+        const code_point = std.mem.readInt(u32, bytes, .little);
+
+        map.putAssumeCapacityNoClobber(code_point, {});
+    }
+
+    return map;
 }
