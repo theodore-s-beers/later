@@ -7,6 +7,7 @@ const consts = @import("consts");
 const decode = @import("decode");
 const load = @import("load");
 const normalize = @import("normalize");
+const prefix = @import("prefix");
 const sort_key = @import("sort_key");
 const types = @import("types");
 const util = @import("util");
@@ -33,6 +34,7 @@ pub const Collator = struct {
     fcd_map: ?AutoHashMap(u32, u16) = null,
     multi_map: ?types.MultiMap = null,
     single_map: ?types.SinglesMap = null,
+    variable_map: ?AutoHashMap(u32, void) = null,
 
     //
     // Init, deinit
@@ -82,6 +84,7 @@ pub const Collator = struct {
         if (self.fcd_map) |*map| map.deinit();
         if (self.multi_map) |*map| map.deinit();
         if (self.single_map) |*map| map.deinit();
+        if (self.variable_map) |*map| map.deinit();
     }
 
     //
@@ -105,8 +108,14 @@ pub const Collator = struct {
             return util.cmpArray(u32, self.a_chars.items, self.b_chars.items);
         }
 
-        try cea.generateCEA(self, &self.a_cea, &self.a_chars);
-        try cea.generateCEA(self, &self.b_cea, &self.b_chars);
+        const offset = try prefix.findOffset(self); // Default 0
+
+        if (self.a_chars.items[offset..].len == 0 or self.b_chars.items[offset..].len == 0) {
+            return util.cmp(usize, self.a_chars.items.len, self.b_chars.items.len);
+        }
+
+        try cea.generateCEA(self, &self.a_cea, &self.a_chars, offset);
+        try cea.generateCEA(self, &self.b_cea, &self.b_chars, offset);
 
         const comparison = sort_key.compareIncremental(self.a_cea.items, self.b_cea.items, self.shifting);
         if (comparison == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
@@ -172,5 +181,15 @@ pub const Collator = struct {
         if (self.single_map == null)
             self.single_map = try load.loadSingle(self.alloc, self.table == .cldr);
         return self.single_map.?.map.get(codepoint);
+    }
+
+    pub fn getVariable(self: *Collator, codepoint: u32) !bool {
+        if (self.variable_map) |*map| return map.contains(codepoint);
+
+        self.mutex.lock();
+        defer self.mutex.unlock();
+
+        if (self.variable_map == null) self.variable_map = try load.loadVariable(self.alloc);
+        return self.variable_map.?.contains(codepoint);
     }
 };

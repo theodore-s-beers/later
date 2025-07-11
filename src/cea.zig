@@ -10,10 +10,11 @@ pub fn generateCEA(
     coll: *Collator,
     cea: *ArrayList(u32),
     char_vals: *ArrayList(u32),
+    offset: usize,
 ) !void {
     var input_length: usize = char_vals.items.len;
 
-    var left: usize = 0;
+    var left = offset;
     var cea_idx: usize = 0;
     var last_variable = false;
 
