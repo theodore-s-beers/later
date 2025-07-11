@@ -46,8 +46,7 @@ fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) !voi
         const comparison = coll.collate(test_string.items, max_line.items);
         if (comparison == .lt) std.debug.panic("Invalid collation order at line {}\n", .{i});
 
-        max_line.clearRetainingCapacity();
-        try max_line.appendSlice(test_string.items);
+        std.mem.swap(std.ArrayList(u8), &max_line, &test_string);
     }
 }
 
