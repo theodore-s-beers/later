@@ -1,6 +1,4 @@
 const std = @import("std");
-const AutoHashMap = std.AutoHashMap;
-
 const Collator = @import("collator").Collator;
 
 // Jamo-related consts

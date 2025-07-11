@@ -1,5 +1,6 @@
 const std = @import("std");
 const consts = @import("consts");
+
 const Collator = @import("collator").Collator;
 
 pub fn findOffset(coll: *Collator) !usize {

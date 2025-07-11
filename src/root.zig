@@ -1,5 +1,4 @@
 const std = @import("std");
-const AutoHashMap = std.AutoHashMap;
 
 pub const Collator = @import("collator").Collator;
 
