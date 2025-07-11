@@ -1,6 +1,7 @@
 const std = @import("std");
 const AutoHashMap = std.AutoHashMap;
 
+const ascii = @import("ascii");
 const cea = @import("cea");
 const consts = @import("consts");
 const decode = @import("decode");
@@ -93,6 +94,8 @@ pub const Collator = struct {
         // Decode function clears input list
         try decode.bytesToCodepoints(&self.a_chars, a);
         try decode.bytesToCodepoints(&self.b_chars, b);
+
+        if (ascii.tryAscii(self.a_chars.items, self.b_chars.items)) |ord| return ord;
 
         try normalize.makeNFD(self, &self.a_chars);
         try normalize.makeNFD(self, &self.b_chars);
