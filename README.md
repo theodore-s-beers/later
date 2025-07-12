@@ -14,14 +14,13 @@ zig build test --release=safe
 ## Usage example
 
 ```zig
-fn collateComparator(context: *Collator, a: []const u8, b: []const u8) bool {
-    return context.collate(a, b) == .lt;
-}
+const std = @import("std");
+const later = @import("later");
 
 test "sort multilingual list of names" {
     const alloc = std.testing.allocator;
 
-    var coll = try Collator.initDefault(alloc);
+    var coll = try later.Collator.initDefault(alloc);
     defer coll.deinit();
 
     var input = [_][]const u8{
@@ -46,7 +45,7 @@ test "sort multilingual list of names" {
         "صدام",
     };
 
-    std.mem.sort([]const u8, &input, &coll, collateComparator);
+    std.mem.sort([]const u8, &input, &coll, later.collateComparator);
     try std.testing.expectEqualSlices([]const u8, &expected, &input);
 }
 ```
@@ -64,7 +63,7 @@ generating maps from Unicode data files. We need to be able to determine
 quickly, for a given code point, its canonical decomposition, combining class,
 collation weights, and more. I built the maps for `later` in a separate
 repository, [uca-maps-zig](https://github.com/theodore-s-beers/uca-maps-zig).
-They're serialized in simple custom binary formats (see `src/bin`), and loaded
+They're serialized in simple custom binary formats (see `src/bin`) and loaded
 on-demand in collation.
 
 Another part of the fun in this project was implementing UTF-8
