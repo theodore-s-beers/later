@@ -79,6 +79,6 @@ test "decode 4-byte code point" {
 
     try bytesToCodepoints(&result, &input);
 
-    try testing.expectEqual(@as(usize, 1), result.items.len);
-    try testing.expectEqual(@as(u32, 0x1BC9E), result.items[0]);
+    try testing.expectEqual(1, result.items.len);
+    try testing.expectEqual(0x1BC9E, result.items[0]);
 }
