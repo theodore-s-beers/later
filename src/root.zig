@@ -1,10 +1,18 @@
 const std = @import("std");
 
+//
+// Exports
+//
+
 pub const Collator = @import("collator").Collator;
 
 pub fn collateComparator(context: *Collator, a: []const u8, b: []const u8) bool {
     return context.collate(a, b) == .lt;
 }
+
+//
+// Conformance test function
+//
 
 fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) !void {
     const start_time = std.time.microTimestamp();
@@ -49,6 +57,10 @@ fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) !voi
     }
 }
 
+//
+// Conformance tests
+//
+
 test "cldr non-ignorable" {
     const alloc = std.testing.allocator;
 
@@ -84,6 +96,10 @@ test "ducet shifted" {
 
     try conformance(alloc, "test-data/CollationTest_SHIFTED_SHORT.txt", &coll);
 }
+
+//
+// Other tests
+//
 
 test "sort multilingual list of names" {
     const alloc = std.testing.allocator;
