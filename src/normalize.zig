@@ -49,7 +49,7 @@ pub fn makeNFD(coll: *Collator, input: *std.ArrayList(u32)) !void {
     if (try fcd(coll, input.items)) return;
 
     try decompose(coll, input);
-    try reorder(coll, input);
+    try reorder(coll, input.items);
 }
 
 fn fcd(coll: *Collator, input: []const u32) !bool {
@@ -131,27 +131,27 @@ fn decomposeJamo(s: u32) struct { usize, [3]u32 } {
     }
 }
 
-fn reorder(coll: *Collator, input: *std.ArrayList(u32)) !void {
-    var n = input.items.len;
+fn reorder(coll: *Collator, input: []u32) !void {
+    var n = input.len;
 
     while (n > 1) {
         var new_n: usize = 0;
         var i: usize = 1;
 
         while (i < n) {
-            const ccc_b = try coll.getCCC(input.items[i]) orelse 0;
+            const ccc_b = try coll.getCCC(input[i]) orelse 0;
             if (ccc_b == 0) {
                 i += 2;
                 continue;
             }
 
-            const ccc_a = try coll.getCCC(input.items[i - 1]) orelse 0;
+            const ccc_a = try coll.getCCC(input[i - 1]) orelse 0;
             if (ccc_a == 0 or ccc_a <= ccc_b) {
                 i += 1;
                 continue;
             }
 
-            std.mem.swap(u32, &input.items[i - 1], &input.items[i]);
+            std.mem.swap(u32, &input[i - 1], &input[i]);
 
             new_n = i;
             i += 1;
