@@ -199,13 +199,13 @@ pub fn variability(weights: u32) bool {
 }
 
 pub fn primary(weights: u32) u16 {
-    return @intCast((weights >> 16));
+    return @intCast(weights >> 16);
 }
 
 pub fn secondary(weights: u32) u16 {
-    return @intCast(((weights & 0xFFFF) & 0b1_1111_1111));
+    return @intCast((weights & 0xFFFF) & 0b1_1111_1111);
 }
 
 pub fn tertiary(weights: u32) u16 {
-    return @intCast((((weights & 0xFFFF) >> 9) & 0b11_1111));
+    return @intCast(((weights & 0xFFFF) >> 9) & 0b11_1111);
 }
