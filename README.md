@@ -68,5 +68,5 @@ on-demand in collation.
 
 Another part of the fun in this project was implementing UTF-8
 decoding/validation and Unicode form NFD normalization. It turns out the
-algorithms are mature, and they work well, and they aren't all that difficult to
-code. We stand on the shoulders of giants!
+algorithms are well established, and they work nicely, and they aren't all that
+difficult to code. We stand on the shoulders of giants!
