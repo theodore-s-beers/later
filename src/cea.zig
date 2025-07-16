@@ -111,9 +111,9 @@ pub fn generateCEA(
 
                     // Having made it this far, we can test a new subset, adding later char(s)
                     const new_subset: []const u32 = if (try_two)
-                        &[_]u32{ left_val, char_vals.items[max_right - 1], char_vals.items[max_right] }
+                        &[3]u32{ left_val, char_vals.items[max_right - 1], char_vals.items[max_right] }
                     else
-                        &[_]u32{ left_val, char_vals.items[max_right] };
+                        &[2]u32{ left_val, char_vals.items[max_right] };
 
                     //
                     // OUTCOME 6
@@ -171,7 +171,7 @@ pub fn generateCEA(
                         // Having made it this far, we can test a new subset, adding the later char.
                         // Again, this only happens if we found a match of two code points and want
                         // to add a third; so we can be oddly specific.
-                        const new_subset = [_]u32{ subset[0], subset[1], char_vals.items[right + 1] };
+                        const new_subset = [3]u32{ subset[0], subset[1], char_vals.items[right + 1] };
 
                         //
                         // OUTCOME 4
