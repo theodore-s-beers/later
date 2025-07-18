@@ -25,10 +25,15 @@ fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) void
     const test_data = std.fs.cwd().readFileAlloc(alloc, path, 4 * 1024 * 1024) catch unreachable;
     defer alloc.free(test_data);
 
-    var max_line = std.ArrayList(u8).initCapacity(alloc, 32) catch unreachable;
+    // Stack alloc for test strings
+    var buf: [64]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&buf);
+    const stack_alloc = fba.allocator();
+
+    var max_line = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch unreachable;
     defer max_line.deinit();
 
-    var test_string = std.ArrayList(u8).initCapacity(alloc, 32) catch unreachable;
+    var test_string = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch unreachable;
     defer test_string.deinit();
 
     var line_iter = std.mem.splitScalar(u8, test_data, '\n');
