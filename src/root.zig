@@ -31,10 +31,7 @@ fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) void
     const stack_alloc = fba.allocator();
 
     var max_line = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch unreachable;
-    defer max_line.deinit();
-
     var test_string = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch unreachable;
-    defer test_string.deinit();
 
     var line_iter = std.mem.splitScalar(u8, test_data, '\n');
     var i: usize = 0;
