@@ -72,7 +72,6 @@ const CombiningClass = enum(u8) {
 };
 
 const LAST_CODEPOINT: u32 = 0x10FFFF;
-const BLOCK_SIZE: usize = 256;
 const SHIFT: usize = 8;
 const MASK: usize = 0xFF;
 
