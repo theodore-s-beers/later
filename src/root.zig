@@ -161,6 +161,6 @@ test "sort multilingual list of names" {
         "صدام",
     };
 
-    std.mem.sort([]const u8, &input, &coll, collateComparator);
+    std.mem.sortUnstable([]const u8, &input, &coll, collateComparator);
     try std.testing.expectEqualSlices([]const u8, &expected, &input);
 }
