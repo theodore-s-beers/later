@@ -29,7 +29,6 @@ pub const Collator = struct {
 
     mutex: std.Thread.Mutex = .{},
 
-    ccc_map: ?AutoHashMap(u32, u8) = null,
     decomp_map: ?types.SinglesMap = null,
     fcd_map: ?AutoHashMap(u32, u16) = null,
     multi_map: ?types.MultiMap = null,
@@ -79,7 +78,6 @@ pub const Collator = struct {
         self.a_cea.deinit();
         self.b_cea.deinit();
 
-        if (self.ccc_map) |*map| map.deinit();
         if (self.decomp_map) |*map| map.deinit();
         if (self.fcd_map) |*map| map.deinit();
         if (self.multi_map) |*map| map.deinit();
@@ -133,16 +131,6 @@ pub const Collator = struct {
     //
     // Loading data on demand
     //
-
-    pub fn getCCC(self: *Collator, codepoint: u32) !?u8 {
-        if (self.ccc_map) |*map| return map.get(codepoint);
-
-        self.mutex.lock();
-        defer self.mutex.unlock();
-
-        if (self.ccc_map == null) self.ccc_map = try load.loadCCC(self.alloc);
-        return self.ccc_map.?.get(codepoint);
-    }
 
     pub fn getDecomp(self: *Collator, codepoint: u32) !?[]const u32 {
         if (self.decomp_map) |*map| return map.map.get(codepoint);

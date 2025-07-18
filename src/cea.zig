@@ -1,6 +1,7 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
 
+const ccc = @import("ccc");
 const consts = @import("consts");
 const util = @import("util");
 
@@ -103,7 +104,7 @@ pub fn generateCEA(
                     // Make sure the sequence of CCC values is kosher
                     const test_range = char_vals.items[right .. max_right + 1];
 
-                    if (!try util.cccSequenceOk(coll, test_range)) {
+                    if (!util.cccSequenceOk(test_range)) {
                         try_two = false; // Can forget about try_two in this case
                         max_right -= 1;
                         continue;
@@ -164,10 +165,10 @@ pub fn generateCEA(
 
                 if (try_discont) {
                     // Need to make sure the sequence of CCCs is kosher
-                    const ccc_a: u8 = try coll.getCCC(char_vals.items[right]) orelse 0;
-                    const ccc_b: u8 = try coll.getCCC(char_vals.items[right + 1]) orelse 0;
+                    const cc_a = ccc.getCombiningClass(char_vals.items[right]);
+                    const cc_b = ccc.getCombiningClass(char_vals.items[right + 1]);
 
-                    if (ccc_a > 0 and ccc_b > ccc_a) {
+                    if (cc_a > 0 and cc_b > cc_a) {
                         // Having made it this far, we can test a new subset, adding the later char.
                         // Again, this only happens if we found a match of two code points and want
                         // to add a third; so we can be oddly specific.

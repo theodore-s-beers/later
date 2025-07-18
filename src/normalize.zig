@@ -1,4 +1,5 @@
 const std = @import("std");
+const ccc = @import("ccc");
 const Collator = @import("collator").Collator;
 
 // Jamo-related consts
@@ -49,7 +50,7 @@ pub fn makeNFD(coll: *Collator, input: *std.ArrayList(u32)) !void {
     if (try fcd(coll, input.items)) return;
 
     try decompose(coll, input);
-    try reorder(coll, input.items);
+    reorder(input.items);
 }
 
 fn fcd(coll: *Collator, input: []const u32) !bool {
@@ -68,7 +69,7 @@ fn fcd(coll: *Collator, input: []const u32) !bool {
                 const bytes = std.mem.toBytes(std.mem.bigToNative(u16, vals));
                 break :blk .{ bytes[0], bytes[1] };
             } else {
-                const cc: u8 = try coll.getCCC(c) orelse 0;
+                const cc = ccc.getCombiningClass(c);
                 break :blk .{ cc, cc };
             }
         };
@@ -131,7 +132,7 @@ fn decomposeJamo(s: u32) struct { usize, [3]u32 } {
     }
 }
 
-fn reorder(coll: *Collator, input: []u32) !void {
+fn reorder(input: []u32) void {
     var n = input.len;
 
     while (n > 1) {
@@ -139,14 +140,14 @@ fn reorder(coll: *Collator, input: []u32) !void {
         var i: usize = 1;
 
         while (i < n) {
-            const ccc_b = try coll.getCCC(input[i]) orelse 0;
-            if (ccc_b == 0) {
+            const cc_b = ccc.getCombiningClass(input[i]);
+            if (cc_b == 0) {
                 i += 2;
                 continue;
             }
 
-            const ccc_a = try coll.getCCC(input[i - 1]) orelse 0;
-            if (ccc_a == 0 or ccc_a <= ccc_b) {
+            const cc_a = ccc.getCombiningClass(input[i - 1]);
+            if (cc_a == 0 or cc_a <= cc_b) {
                 i += 1;
                 continue;
             }

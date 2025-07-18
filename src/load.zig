@@ -1,7 +1,6 @@
 const std = @import("std");
 const types = @import("types");
 
-const ccc_data = @embedFile("bin/ccc.bin");
 const decomp_data = @embedFile("bin/decomp.bin");
 const fcd_data = @embedFile("bin/fcd.bin");
 const multi_data = @embedFile("bin/multi.bin");
@@ -9,28 +8,6 @@ const multi_cldr_data = @embedFile("bin/multi_cldr.bin");
 const singles_data = @embedFile("bin/singles.bin");
 const singles_cldr_data = @embedFile("bin/singles_cldr.bin");
 const variable_data = @embedFile("bin/variable.bin");
-
-pub fn loadCCC(alloc: std.mem.Allocator) !std.AutoHashMap(u32, u8) {
-    const entry_size = @sizeOf(u32) + @sizeOf(u8);
-    const count: u32 = @intCast(ccc_data.len / entry_size);
-
-    var map = std.AutoHashMap(u32, u8).init(alloc);
-    errdefer map.deinit();
-
-    try map.ensureTotalCapacity(count);
-
-    for (0..count) |i| {
-        const offset = i * entry_size;
-
-        const key_bytes = ccc_data[offset..][0..@sizeOf(u32)];
-        const key = std.mem.readInt(u32, key_bytes, .little);
-        const value = ccc_data[offset + @sizeOf(u32)];
-
-        map.putAssumeCapacityNoClobber(key, value);
-    }
-
-    return map;
-}
 
 pub fn loadDecomp(alloc: std.mem.Allocator) !types.SinglesMap {
     // Map header

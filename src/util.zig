@@ -1,16 +1,17 @@
 const std = @import("std");
+const ccc = @import("ccc");
 const consts = @import("consts");
 
 const Collator = @import("collator").Collator;
 
-pub fn cccSequenceOk(coll: *Collator, test_range: []u32) !bool {
-    var max_ccc: u8 = 0;
+pub fn cccSequenceOk(test_range: []u32) bool {
+    var max_cc: u8 = 0;
 
     for (test_range) |elem| {
-        const ccc = try coll.getCCC(elem) orelse 0;
-        if (ccc == 0 or ccc <= max_ccc) return false;
+        const cc = ccc.getCombiningClass(elem);
+        if (cc == 0 or cc <= max_cc) return false;
 
-        max_ccc = ccc;
+        max_cc = cc;
     }
 
     return true;
