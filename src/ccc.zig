@@ -8,10 +8,6 @@ pub fn getCombiningClass(codepoint: u32) u8 {
     return @intFromEnum(CCC_BLOCKS[block_offset + within_block]);
 }
 
-//
-// Generated tables, adapted from yeslogic/unicode-canonical-combining-class
-//
-
 const CombiningClass = enum(u8) {
     NR = 0,
     Overlay = 1,
@@ -74,6 +70,10 @@ const CombiningClass = enum(u8) {
 const LAST_CODEPOINT: u32 = 0x10FFFF;
 const SHIFT: usize = 8;
 const MASK: usize = 0xFF;
+
+//
+// Generated tables, adapted from yeslogic/unicode-canonical-combining-class
+//
 
 const CCC_BLOCKS: [17408]CombiningClass = .{
     .NR,        .NR,        .NR,        .NR,        .NR,       .NR,        .NR,        .NR,
