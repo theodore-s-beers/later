@@ -96,7 +96,7 @@ fn utf8Encode(c: u21, out: []u8) u3 {
 test "cldr non-ignorable" {
     const alloc = std.testing.allocator;
 
-    var coll = Collator.init(alloc, .cldr, false, false);
+    var coll = try Collator.init(alloc, .cldr, false, false);
     defer coll.deinit();
 
     conformance(alloc, "test-data/CollationTest_CLDR_NON_IGNORABLE_SHORT.txt", &coll);
@@ -105,7 +105,7 @@ test "cldr non-ignorable" {
 test "cldr shifted" {
     const alloc = std.testing.allocator;
 
-    var coll = Collator.init(alloc, .cldr, true, false);
+    var coll = try Collator.init(alloc, .cldr, true, false);
     defer coll.deinit();
 
     conformance(alloc, "test-data/CollationTest_CLDR_SHIFTED_SHORT.txt", &coll);
@@ -114,7 +114,7 @@ test "cldr shifted" {
 test "ducet non-ignorable" {
     const alloc = std.testing.allocator;
 
-    var coll = Collator.init(alloc, .ducet, false, false);
+    var coll = try Collator.init(alloc, .ducet, false, false);
     defer coll.deinit();
 
     conformance(alloc, "test-data/CollationTest_NON_IGNORABLE_SHORT.txt", &coll);
@@ -123,7 +123,7 @@ test "ducet non-ignorable" {
 test "ducet shifted" {
     const alloc = std.testing.allocator;
 
-    var coll = Collator.init(alloc, .ducet, true, false);
+    var coll = try Collator.init(alloc, .ducet, true, false);
     defer coll.deinit();
 
     conformance(alloc, "test-data/CollationTest_SHIFTED_SHORT.txt", &coll);
@@ -136,7 +136,7 @@ test "ducet shifted" {
 test "sort multilingual list of names" {
     const alloc = std.testing.allocator;
 
-    var coll = Collator.initDefault(alloc);
+    var coll = try Collator.initDefault(alloc);
     defer coll.deinit();
 
     var input = [_][]const u8{

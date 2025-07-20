@@ -46,14 +46,14 @@ const JAMO_LV = [399]u32{
     0xD750, 0xD76C, 0xD788,
 };
 
-pub fn makeNFD(coll: *Collator, input: *std.ArrayList(u32)) void {
-    if (fcd(coll, input.items)) return;
+pub fn makeNFD(coll: *Collator, input: *std.ArrayList(u32)) !void {
+    if (try fcd(coll, input.items)) return;
 
-    decompose(coll, input);
+    try decompose(coll, input);
     reorder(input.items);
 }
 
-fn fcd(coll: *Collator, input: []const u32) bool {
+fn fcd(coll: *Collator, input: []const u32) !bool {
     var prev_trail_cc: u8 = 0;
 
     for (input) |c| {
@@ -65,7 +65,7 @@ fn fcd(coll: *Collator, input: []const u32) bool {
         if (c == 0x0F81 or (0xAC00 <= c and c <= 0xD7A3)) return false;
 
         const lead_cc, const trail_cc = blk: {
-            if (coll.getFCD(c)) |vals| {
+            if (try coll.getFCD(c)) |vals| {
                 const bytes = std.mem.toBytes(std.mem.bigToNative(u16, vals));
                 break :blk .{ bytes[0], bytes[1] };
             } else {
@@ -82,7 +82,7 @@ fn fcd(coll: *Collator, input: []const u32) bool {
     return true;
 }
 
-fn decompose(coll: *Collator, input: *std.ArrayList(u32)) void {
+fn decompose(coll: *Collator, input: *std.ArrayList(u32)) !void {
     var i: usize = 0;
 
     while (i < input.items.len) {
@@ -95,14 +95,14 @@ fn decompose(coll: *Collator, input: *std.ArrayList(u32)) void {
 
         if (0xAC00 <= code_point and code_point <= 0xD7A3) {
             const len, const arr = decomposeJamo(code_point);
-            input.replaceRange(i, 1, arr[0..len]) catch @panic("OOM in Collator");
+            try input.replaceRange(i, 1, arr[0..len]);
 
             i += len;
             continue;
         }
 
-        if (coll.getDecomp(code_point)) |decomp| {
-            input.replaceRange(i, 1, decomp) catch @panic("OOM in Collator");
+        if (try coll.getDecomp(code_point)) |decomp| {
+            try input.replaceRange(i, 1, decomp);
             i += decomp.len;
             continue;
         }

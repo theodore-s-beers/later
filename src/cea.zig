@@ -7,12 +7,10 @@ const util = @import("util");
 
 const Collator = @import("collator").Collator;
 
-pub fn generateCEA(
-    coll: *Collator,
-    cea: *ArrayList(u32),
-    char_vals: *ArrayList(u32),
-    offset: usize,
-) void {
+pub fn generateCEA(coll: *Collator, offset: usize, side: u8) !void {
+    const char_vals = if (side == 'a') &coll.a_chars else &coll.b_chars;
+    const cea = if (side == 'a') &coll.a_cea else &coll.b_cea;
+
     var input_length: usize = char_vals.items.len;
 
     var left = offset;
@@ -23,7 +21,7 @@ pub fn generateCEA(
     outer: while (left < input_length) {
         const left_val = char_vals.items[left];
 
-        util.growList(cea, cea_idx);
+        try util.growList(cea, cea_idx);
 
         //
         // OUTCOME 1
@@ -61,7 +59,7 @@ pub fn generateCEA(
             // We only had to check for a single code point, and found it, so we can fill in the
             // weights and continue. This is a relatively fast path.
             //
-            if (coll.getSingle(left_val)) |row| {
+            if (try coll.getSingle(left_val)) |row| {
                 util.fillWeights(cea, row, &cea_idx, coll.shifting, &last_variable);
                 left += 1;
                 continue; // To the next outer loop iteration...
@@ -90,7 +88,7 @@ pub fn generateCEA(
                 // If right - left == 1 (which cannot be the case in the first iteration), attempts
                 // to find a multi-code-point match have failed. So we pull the value(s) for the
                 // first code point from the singles map. It's guaranteed to be there.
-                const row = coll.getSingle(left_val) orelse unreachable;
+                const row = try coll.getSingle(left_val) orelse unreachable;
 
                 // If we found it, we do still need to check for discontiguous matches
                 // Determine how much further right to look
@@ -124,7 +122,7 @@ pub fn generateCEA(
                     // one; fell back to the initial code point; checked for discontiguous matches;
                     // and found something. Anyway, fill in the weights...
                     //
-                    if (coll.getMulti(util.packCodePoints(new_subset))) |new_row| {
+                    if (try coll.getMulti(util.packCodePoints(new_subset))) |new_row| {
                         util.fillWeights(cea, new_row, &cea_idx, coll.shifting, &last_variable);
 
                         // Remove the later char(s) used for the discontiguous match
@@ -157,7 +155,7 @@ pub fn generateCEA(
             // At this point, we're trying to find a slice; this comes "before" the section above
             const subset = char_vals.items[left..right];
 
-            if (coll.getMulti(util.packCodePoints(subset))) |row| {
+            if (try coll.getMulti(util.packCodePoints(subset))) |row| {
                 // If we found it, we may need to check for a discontiguous match. But that's only
                 // if we matched on a set of two code points; and we'll only skip over one to find a
                 // possible third.
@@ -181,7 +179,7 @@ pub fn generateCEA(
                         // larger discontiguous match; and again found one. For a complicated case,
                         // this is a good path. Fill in the weights...
                         //
-                        if (coll.getMulti(util.packCodePoints(&new_subset))) |new_row| {
+                        if (try coll.getMulti(util.packCodePoints(&new_subset))) |new_row| {
                             util.fillWeights(cea, new_row, &cea_idx, coll.shifting, &last_variable);
 
                             // Remove the later char used for the discontiguous match
