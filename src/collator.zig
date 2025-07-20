@@ -91,6 +91,7 @@ pub const Collator = struct {
 
     pub fn collate(self: *Collator, a: []const u8, b: []const u8) std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
+        if (a.len == 0 or b.len == 0) return util.cmp(usize, a.len, b.len);
 
         // Decode function clears input list
         decode.bytesToCodepoints(&self.a_chars, a);
