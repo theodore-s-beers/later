@@ -9,7 +9,7 @@ const singles_data = @embedFile("bin/singles.bin");
 const singles_cldr_data = @embedFile("bin/singles_cldr.bin");
 const variable_data = @embedFile("bin/variable.bin");
 
-pub fn loadDecomp(alloc: std.mem.Allocator) !types.SinglesMap {
+pub fn loadDecomp(alloc: std.mem.Allocator) types.SinglesMap {
     // Map header
     const count = std.mem.readInt(u32, decomp_data[0..@sizeOf(u32)], .little);
     const payload = decomp_data[@sizeOf(u32)..];
@@ -17,13 +17,13 @@ pub fn loadDecomp(alloc: std.mem.Allocator) !types.SinglesMap {
     const entry_header_size = @sizeOf(u32) + @sizeOf(u8);
     const val_count = (payload.len - (count * entry_header_size)) / @sizeOf(u32);
 
-    const vals = try alloc.alloc(u32, val_count);
+    const vals = alloc.alloc(u32, val_count) catch @panic("OOM in Collator");
     errdefer alloc.free(vals);
 
     var map = std.AutoHashMap(u32, []const u32).init(alloc);
     errdefer map.deinit();
 
-    try map.ensureTotalCapacity(count);
+    map.ensureTotalCapacity(count) catch @panic("OOM in Collator");
 
     var offset: usize = 0;
     var vals_offset: usize = 0;
@@ -60,14 +60,14 @@ pub fn loadDecomp(alloc: std.mem.Allocator) !types.SinglesMap {
     };
 }
 
-pub fn loadFCD(alloc: std.mem.Allocator) !std.AutoHashMap(u32, u16) {
+pub fn loadFCD(alloc: std.mem.Allocator) std.AutoHashMap(u32, u16) {
     const entry_size = @sizeOf(u32) + @sizeOf(u16);
     const count: u32 = @intCast(fcd_data.len / entry_size);
 
     var map = std.AutoHashMap(u32, u16).init(alloc);
     errdefer map.deinit();
 
-    try map.ensureTotalCapacity(count);
+    map.ensureTotalCapacity(count) catch @panic("OOM in Collator");
 
     var offset: usize = 0;
     while (offset < fcd_data.len) : (offset += entry_size) {
@@ -83,7 +83,7 @@ pub fn loadFCD(alloc: std.mem.Allocator) !std.AutoHashMap(u32, u16) {
     return map;
 }
 
-pub fn loadMulti(alloc: std.mem.Allocator, cldr: bool) !types.MultiMap {
+pub fn loadMulti(alloc: std.mem.Allocator, cldr: bool) types.MultiMap {
     const data = if (cldr) multi_cldr_data else multi_data;
 
     // Map header
@@ -93,13 +93,13 @@ pub fn loadMulti(alloc: std.mem.Allocator, cldr: bool) !types.MultiMap {
     const entry_header_size = @sizeOf(u64) + @sizeOf(u8);
     const val_count = (payload.len - (count * entry_header_size)) / @sizeOf(u32);
 
-    const vals = try alloc.alloc(u32, val_count);
+    const vals = alloc.alloc(u32, val_count) catch @panic("OOM in Collator");
     errdefer alloc.free(vals);
 
     var map = std.AutoHashMap(u64, []const u32).init(alloc);
     errdefer map.deinit();
 
-    try map.ensureTotalCapacity(count);
+    map.ensureTotalCapacity(count) catch @panic("OOM in Collator");
 
     var offset: usize = 0;
     var vals_offset: usize = 0;
@@ -136,7 +136,7 @@ pub fn loadMulti(alloc: std.mem.Allocator, cldr: bool) !types.MultiMap {
     };
 }
 
-pub fn loadSingle(alloc: std.mem.Allocator, cldr: bool) !types.SinglesMap {
+pub fn loadSingle(alloc: std.mem.Allocator, cldr: bool) types.SinglesMap {
     const data = if (cldr) singles_cldr_data else singles_data;
 
     const count = std.mem.readInt(u32, data[0..@sizeOf(u32)], .little); // Map header
@@ -145,13 +145,13 @@ pub fn loadSingle(alloc: std.mem.Allocator, cldr: bool) !types.SinglesMap {
     const entry_header_size = @sizeOf(u32) + @sizeOf(u8);
     const val_count = (payload.len - (count * entry_header_size)) / @sizeOf(u32);
 
-    const vals = try alloc.alloc(u32, val_count);
+    const vals = alloc.alloc(u32, val_count) catch @panic("OOM in Collator");
     errdefer alloc.free(vals);
 
     var map = std.AutoHashMap(u32, []const u32).init(alloc);
     errdefer map.deinit();
 
-    try map.ensureTotalCapacity(count);
+    map.ensureTotalCapacity(count) catch @panic("OOM in Collator");
 
     var offset: usize = 0;
     var vals_offset: usize = 0;
@@ -188,13 +188,13 @@ pub fn loadSingle(alloc: std.mem.Allocator, cldr: bool) !types.SinglesMap {
     };
 }
 
-pub fn loadVariable(alloc: std.mem.Allocator) !std.AutoHashMap(u32, void) {
+pub fn loadVariable(alloc: std.mem.Allocator) std.AutoHashMap(u32, void) {
     const count: usize = variable_data.len / @sizeOf(u32);
 
     var map = std.AutoHashMap(u32, void).init(alloc);
     errdefer map.deinit();
 
-    try map.ensureTotalCapacity(@intCast(count));
+    map.ensureTotalCapacity(@intCast(count)) catch @panic("OOM in Collator");
 
     for (0..count) |i| {
         const offset = i * @sizeOf(u32);

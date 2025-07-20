@@ -1,8 +1,8 @@
 const std = @import("std");
 
-pub fn bytesToCodepoints(codepoints: *std.ArrayList(u32), input: []const u8) !void {
+pub fn bytesToCodepoints(codepoints: *std.ArrayList(u32), input: []const u8) void {
     codepoints.clearRetainingCapacity();
-    try codepoints.ensureTotalCapacity(input.len);
+    codepoints.ensureTotalCapacity(input.len) catch @panic("OOM in Collator");
 
     var state: u8 = UTF8_ACCEPT;
     var codepoint: u32 = 0;
@@ -77,7 +77,7 @@ test "decode 4-byte code point" {
     var result = std.ArrayList(u32).init(alloc);
     defer result.deinit();
 
-    try bytesToCodepoints(&result, &input);
+    bytesToCodepoints(&result, &input);
 
     try testing.expectEqual(1, result.items.len);
     try testing.expectEqual(0x1BC9E, result.items[0]);
