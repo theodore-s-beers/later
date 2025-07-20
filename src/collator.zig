@@ -44,7 +44,7 @@ pub const Collator = struct {
         table: types.CollationTable,
         shifting: bool,
         tiebreak: bool,
-    ) Collator {
+    ) !Collator {
         const low_table: [183]u32 = if (table == .cldr) consts.LOW_CLDR else consts.LOW;
 
         var coll = Collator{
@@ -56,21 +56,21 @@ pub const Collator = struct {
 
             .low_table = low_table,
 
-            .a_chars = std.ArrayList(u32).initCapacity(alloc, 64) catch @panic("OOM in Collator"),
-            .b_chars = std.ArrayList(u32).initCapacity(alloc, 64) catch @panic("OOM in Collator"),
+            .a_chars = try std.ArrayList(u32).initCapacity(alloc, 64),
+            .b_chars = try std.ArrayList(u32).initCapacity(alloc, 64),
             .a_cea = std.ArrayList(u32).init(alloc),
             .b_cea = std.ArrayList(u32).init(alloc),
         };
 
         // In this case we want len == capacity
-        coll.a_cea.resize(64) catch @panic("OOM in Collator");
-        coll.b_cea.resize(64) catch @panic("OOM in Collator");
+        try coll.a_cea.resize(64);
+        try coll.b_cea.resize(64);
 
         return coll;
     }
 
-    pub fn initDefault(alloc: std.mem.Allocator) Collator {
-        return Collator.init(alloc, .cldr, true, true);
+    pub fn initDefault(alloc: std.mem.Allocator) !Collator {
+        return try Collator.init(alloc, .cldr, true, true);
     }
 
     pub fn deinit(self: *Collator) void {
@@ -91,18 +91,22 @@ pub const Collator = struct {
     //
 
     pub fn collate(self: *Collator, a: []const u8, b: []const u8) std.math.Order {
+        return self.collateFallible(a, b) catch @panic("Allocation failure during collation");
+    }
+
+    pub fn collateFallible(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
         if (a.len == 0 or b.len == 0) return util.cmp(usize, a.len, b.len);
 
         // Decode function clears input list
-        decode.bytesToCodepoints(&self.a_chars, a);
-        decode.bytesToCodepoints(&self.b_chars, b);
+        try decode.bytesToCodepoints(&self.a_chars, a);
+        try decode.bytesToCodepoints(&self.b_chars, b);
 
         // ASCII fast path
         if (ascii.tryAscii(self.a_chars.items, self.b_chars.items)) |ord| return ord;
 
-        normalize.makeNFD(self, &self.a_chars);
-        normalize.makeNFD(self, &self.b_chars);
+        try normalize.makeNFD(self, &self.a_chars);
+        try normalize.makeNFD(self, &self.b_chars);
 
         // Equal after normalization?
         if (std.mem.eql(u32, self.a_chars.items, self.b_chars.items)) {
@@ -110,15 +114,15 @@ pub const Collator = struct {
             return util.cmpArray(u32, self.a_chars.items, self.b_chars.items);
         }
 
-        const offset = prefix.findOffset(self); // Default 0
+        const offset = try prefix.findOffset(self); // Default 0
 
         // Prefix trimming may reveal that one list is a prefix of the other
         if (self.a_chars.items[offset..].len == 0 or self.b_chars.items[offset..].len == 0) {
             return util.cmp(usize, self.a_chars.items.len, self.b_chars.items.len);
         }
 
-        cea.generateCEA(self, &self.a_cea, &self.a_chars, offset);
-        cea.generateCEA(self, &self.b_cea, &self.b_chars, offset);
+        try cea.generateCEA(self, offset, 'a');
+        try cea.generateCEA(self, offset, 'b');
 
         const comparison = sort_key.compareIncremental(self.a_cea.items, self.b_cea.items, self.shifting);
         if (comparison == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
@@ -130,55 +134,55 @@ pub const Collator = struct {
     // Loading data on demand
     //
 
-    pub fn getDecomp(self: *Collator, codepoint: u32) ?[]const u32 {
+    pub fn getDecomp(self: *Collator, codepoint: u32) !?[]const u32 {
         if (self.decomp_map) |*map| return map.map.get(codepoint);
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        if (self.decomp_map == null) self.decomp_map = load.loadDecomp(self.alloc);
+        if (self.decomp_map == null) self.decomp_map = try load.loadDecomp(self.alloc);
         return self.decomp_map.?.map.get(codepoint);
     }
 
-    pub fn getFCD(self: *Collator, codepoint: u32) ?u16 {
+    pub fn getFCD(self: *Collator, codepoint: u32) !?u16 {
         if (self.fcd_map) |*map| return map.get(codepoint);
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        if (self.fcd_map == null) self.fcd_map = load.loadFCD(self.alloc);
+        if (self.fcd_map == null) self.fcd_map = try load.loadFCD(self.alloc);
         return self.fcd_map.?.get(codepoint);
     }
 
-    pub fn getMulti(self: *Collator, codepoints: u64) ?[]const u32 {
+    pub fn getMulti(self: *Collator, codepoints: u64) !?[]const u32 {
         if (self.multi_map) |*map| return map.map.get(codepoints);
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
         if (self.multi_map == null)
-            self.multi_map = load.loadMulti(self.alloc, self.table == .cldr);
+            self.multi_map = try load.loadMulti(self.alloc, self.table == .cldr);
         return self.multi_map.?.map.get(codepoints);
     }
 
-    pub fn getSingle(self: *Collator, codepoint: u32) ?[]const u32 {
+    pub fn getSingle(self: *Collator, codepoint: u32) !?[]const u32 {
         if (self.single_map) |*map| return map.map.get(codepoint);
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
         if (self.single_map == null)
-            self.single_map = load.loadSingle(self.alloc, self.table == .cldr);
+            self.single_map = try load.loadSingle(self.alloc, self.table == .cldr);
         return self.single_map.?.map.get(codepoint);
     }
 
-    pub fn getVariable(self: *Collator, codepoint: u32) bool {
+    pub fn getVariable(self: *Collator, codepoint: u32) !bool {
         if (self.variable_map) |*map| return map.contains(codepoint);
 
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        if (self.variable_map == null) self.variable_map = load.loadVariable(self.alloc);
+        if (self.variable_map == null) self.variable_map = try load.loadVariable(self.alloc);
         return self.variable_map.?.contains(codepoint);
     }
 };
