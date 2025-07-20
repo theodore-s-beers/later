@@ -20,7 +20,7 @@ const later = @import("later");
 test "sort multilingual list of names" {
     const alloc = std.testing.allocator;
 
-    var coll = try later.Collator.initDefault(alloc);
+    var coll = later.Collator.initDefault(alloc);
     defer coll.deinit();
 
     var input = [_][]const u8{
