@@ -56,12 +56,13 @@ pub const Collator = struct {
 
             .low_table = low_table,
 
-            .a_chars = std.ArrayList(u32).init(alloc),
-            .b_chars = std.ArrayList(u32).init(alloc),
+            .a_chars = std.ArrayList(u32).initCapacity(alloc, 64) catch @panic("OOM in Collator"),
+            .b_chars = std.ArrayList(u32).initCapacity(alloc, 64) catch @panic("OOM in Collator"),
             .a_cea = std.ArrayList(u32).init(alloc),
             .b_cea = std.ArrayList(u32).init(alloc),
         };
 
+        // In this case we want len == capacity
         coll.a_cea.resize(64) catch @panic("OOM in Collator");
         coll.b_cea.resize(64) catch @panic("OOM in Collator");
 
