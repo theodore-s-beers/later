@@ -72,11 +72,7 @@ fn utf8Encode(c: u21, out: []u8) u3 {
     const length: u3 = if (c < 0x80) 1 else if (c < 0x800) 2 else if (c < 0x10000) 3 else 4;
 
     switch (length) {
-        // The pattern for each is the same
-        // - Increasing the initial shift by 6 each time
-        // - Each time after the first shorten the shifted
-        //   value to a max of 0b111111 (63)
-        1 => out[0] = @as(u8, @intCast(c)), // Can just do 0 + codepoint for initial range
+        1 => out[0] = @as(u8, @intCast(c)),
         2 => {
             out[0] = @as(u8, @intCast(0b11000000 | (c >> 6)));
             out[1] = @as(u8, @intCast(0b10000000 | (c & 0b111111)));
