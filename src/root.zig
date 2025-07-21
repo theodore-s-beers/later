@@ -10,6 +10,15 @@ pub fn collateComparator(context: *Collator, a: []const u8, b: []const u8) bool 
     return context.collate(a, b) == .lt;
 }
 
+pub fn collateComparatorFallible(context: *Collator, a: []const u8, b: []const u8) bool {
+    const ord = context.collateFallible(a, b) catch {
+        std.debug.print("Allocation failure during collation\n", .{});
+        return false; // Not ideal, but the return type must be `bool`
+    };
+
+    return ord == .lt;
+}
+
 //
 // Conformance test function and helper
 //
@@ -161,6 +170,7 @@ test "sort multilingual list of names" {
         "صدام",
     };
 
-    std.mem.sortUnstable([]const u8, &input, &coll, collateComparator);
+    // Try fallible API here
+    std.mem.sortUnstable([]const u8, &input, &coll, collateComparatorFallible);
     try std.testing.expectEqualSlices([]const u8, &expected, &input);
 }
