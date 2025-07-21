@@ -133,7 +133,7 @@ pub fn implicitB(cp: u32) u32 {
 
         if (cp >= 0x18B00 and cp <= 0x18CFF) break :blk cp - 0x18B00; // Khitan
         if (cp >= 0x1B170 and cp <= 0x1B2FF) break :blk cp - 0x1B170; // Nushu
-        break :blk cp & 0x7FFF; // CJK1, CJK2, unass.
+        break :blk cp & 0x7FFF; // CJK1, CJK2, unassigned
     };
 
     bbbb |= 0x8000; // BBBB always bitwise ORed with this value
