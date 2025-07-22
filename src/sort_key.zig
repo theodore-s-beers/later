@@ -1,7 +1,7 @@
 const std = @import("std");
 const util = @import("util");
 
-pub fn compareIncremental(a_cea: []const u32, b_cea: []const u32, shifting: bool) std.math.Order {
+pub fn cmpIncremental(a_cea: []const u32, b_cea: []const u32, shifting: bool) std.math.Order {
     if (shifting) {
         if (comparePrimaryShifting(a_cea, b_cea)) |o| return o;
     } else if (comparePrimary(a_cea, b_cea)) |o| return o;

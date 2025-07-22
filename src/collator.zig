@@ -117,10 +117,10 @@ pub const Collator = struct {
         try cea.generateCEA(self, offset, 'a');
         try cea.generateCEA(self, offset, 'b');
 
-        const comparison = sort_key.compareIncremental(self.a_cea.items, self.b_cea.items, self.shifting);
-        if (comparison == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
+        const ord = sort_key.cmpIncremental(self.a_cea.items, self.b_cea.items, self.shifting);
+        if (ord == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
 
-        return comparison;
+        return ord;
     }
 
     //
@@ -175,7 +175,7 @@ pub const Collator = struct {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        if (self.variable_map == null) self.variable_map = try load.loadVariable(self.alloc);
+        if (self.variable_map == null) self.variable_map = try load.loadVar(self.alloc);
         return self.variable_map.?.contains(codepoint);
     }
 };

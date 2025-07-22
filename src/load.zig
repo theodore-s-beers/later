@@ -188,7 +188,7 @@ pub fn loadSingle(alloc: std.mem.Allocator, cldr: bool) !types.SinglesMap {
     };
 }
 
-pub fn loadVariable(alloc: std.mem.Allocator) !std.AutoHashMap(u32, void) {
+pub fn loadVar(alloc: std.mem.Allocator) !std.AutoHashMap(u32, void) {
     const count: usize = variable_data.len / @sizeOf(u32);
 
     var map = std.AutoHashMap(u32, void).init(alloc);
