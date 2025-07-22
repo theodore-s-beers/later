@@ -96,7 +96,6 @@ pub const Collator = struct {
 
     pub fn collateFallible(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
-        if (a.len == 0 or b.len == 0) return util.cmp(usize, a.len, b.len);
 
         // Decode function clears input list
         try decode.bytesToCodepoints(&self.a_chars, a);
@@ -107,12 +106,6 @@ pub const Collator = struct {
 
         try normalize.makeNFD(self, &self.a_chars);
         try normalize.makeNFD(self, &self.b_chars);
-
-        // Equal after normalization?
-        if (std.mem.eql(u32, self.a_chars.items, self.b_chars.items)) {
-            if (self.tiebreak) return util.cmpArray(u8, a, b);
-            return util.cmpArray(u32, self.a_chars.items, self.b_chars.items);
-        }
 
         const offset = try prefix.findOffset(self); // Default 0
 
