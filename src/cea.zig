@@ -1,5 +1,4 @@
 const std = @import("std");
-const ArrayList = std.ArrayList;
 
 const ccc = @import("ccc");
 const consts = @import("consts");
