@@ -1,5 +1,4 @@
 const std = @import("std");
-const AutoHashMap = std.AutoHashMap;
 
 const ascii = @import("ascii");
 const cea = @import("cea");
@@ -30,10 +29,10 @@ pub const Collator = struct {
     mutex: std.Thread.Mutex = .{},
 
     decomp_map: ?types.SinglesMap = null,
-    fcd_map: ?AutoHashMap(u32, u16) = null,
+    fcd_map: ?std.AutoHashMap(u32, u16) = null,
     multi_map: ?types.MultiMap = null,
     single_map: ?types.SinglesMap = null,
-    variable_map: ?AutoHashMap(u32, void) = null,
+    variable_map: ?std.AutoHashMap(u32, void) = null,
 
     //
     // Init, deinit
@@ -56,10 +55,10 @@ pub const Collator = struct {
 
             .low_table = low_table,
 
-            .a_chars = try std.ArrayList(u32).initCapacity(alloc, 64),
-            .b_chars = try std.ArrayList(u32).initCapacity(alloc, 64),
-            .a_cea = std.ArrayList(u32).init(alloc),
-            .b_cea = std.ArrayList(u32).init(alloc),
+            .a_chars = try .initCapacity(alloc, 64),
+            .b_chars = try .initCapacity(alloc, 64),
+            .a_cea = .init(alloc),
+            .b_cea = .init(alloc),
         };
 
         // In this case we want len == capacity
