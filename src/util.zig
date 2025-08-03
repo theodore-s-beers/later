@@ -2,7 +2,6 @@ const std = @import("std");
 
 const ccc = @import("ccc");
 const consts = @import("consts");
-const Collator = @import("collator").Collator;
 
 pub fn cccSequenceOk(test_range: []u32) bool {
     var max_cc: u8 = 0;
