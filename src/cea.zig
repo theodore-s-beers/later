@@ -6,9 +6,9 @@ const util = @import("util");
 
 const Collator = @import("collator").Collator;
 
-pub fn generateCEA(coll: *Collator, offset: usize, side: u8) !void {
-    const char_vals = if (side == 'a') &coll.a_chars else &coll.b_chars;
-    const cea = if (side == 'a') &coll.a_cea else &coll.b_cea;
+pub fn generateCEA(coll: *Collator, offset: usize, side_b: bool) !void {
+    const char_vals = if (side_b) &coll.b_chars else &coll.a_chars;
+    const cea = if (side_b) &coll.b_cea else &coll.a_cea;
 
     var input_length: usize = char_vals.items.len;
 

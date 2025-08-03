@@ -113,8 +113,8 @@ pub const Collator = struct {
             return util.cmp(usize, self.a_chars.items.len, self.b_chars.items.len);
         }
 
-        try cea.generateCEA(self, offset, 'a');
-        try cea.generateCEA(self, offset, 'b');
+        try cea.generateCEA(self, offset, false); // a
+        try cea.generateCEA(self, offset, true); // b
 
         const ord = sort_key.cmpIncremental(self.a_cea.items, self.b_cea.items, self.shifting);
         if (ord == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
