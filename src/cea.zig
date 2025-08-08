@@ -93,7 +93,10 @@ pub fn generateCEA(coll: *Collator, offset: usize, side_b: bool) !void {
                 // Determine how much further right to look
                 var max_right: usize = if (input_length - right >= 3)
                     right + 2
-                else if (input_length - right == 2) right + 1 else right; // Skip the loop below; there will be no discontiguous match
+                else if (input_length - right == 2)
+                    right + 1
+                else
+                    right; // Skip the loop below; there will be no discontiguous match
 
                 var try_two = max_right - right == 2 and coll.table == .cldr;
 
