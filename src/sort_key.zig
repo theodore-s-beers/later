@@ -27,11 +27,10 @@ pub fn cmpIncremental(a_cea: []const u32, b_cea: []const u32, shifting: bool) st
 //
 
 fn comparePrimary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
-    const n = @min(a_cea.len, b_cea.len);
     var i_a: usize = 0;
     var i_b: usize = 0;
 
-    for (0..n) |_| {
+    while (true) {
         const a_p = nextValidPrimary(a_cea, &i_a);
         const b_p = nextValidPrimary(b_cea, &i_b);
 
@@ -43,11 +42,10 @@ fn comparePrimary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
 }
 
 fn comparePrimaryShifting(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
-    const n = @min(a_cea.len, b_cea.len);
     var i_a: usize = 0;
     var i_b: usize = 0;
 
-    for (0..n) |_| {
+    while (true) {
         const a_p = nextValidPrimaryShifting(a_cea, &i_a);
         const b_p = nextValidPrimaryShifting(b_cea, &i_b);
 
@@ -59,11 +57,10 @@ fn comparePrimaryShifting(a_cea: []const u32, b_cea: []const u32) ?std.math.Orde
 }
 
 fn compareSecondary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
-    const n = @min(a_cea.len, b_cea.len);
     var i_a: usize = 0;
     var i_b: usize = 0;
 
-    for (0..n) |_| {
+    while (true) {
         const a_s = nextValidSecondary(a_cea, &i_a);
         const b_s = nextValidSecondary(b_cea, &i_b);
 
@@ -75,11 +72,10 @@ fn compareSecondary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
 }
 
 fn compareTertiary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
-    const n = @min(a_cea.len, b_cea.len);
     var i_a: usize = 0;
     var i_b: usize = 0;
 
-    for (0..n) |_| {
+    while (true) {
         const a_t = nextValidTertiary(a_cea, &i_a);
         const b_t = nextValidTertiary(b_cea, &i_b);
 
@@ -91,13 +87,12 @@ fn compareTertiary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
 }
 
 fn compareQuaternary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
-    const n = @min(a_cea.len, b_cea.len);
     var i_a: usize = 0;
     var i_b: usize = 0;
 
-    for (0..n) |_| {
-        const a_q = nextValidShifted(a_cea, &i_a);
-        const b_q = nextValidShifted(b_cea, &i_b);
+    while (true) {
+        const a_q = nextValidPrimary(a_cea, &i_a);
+        const b_q = nextValidPrimary(b_cea, &i_b);
 
         if (a_q != b_q) return util.cmp(u16, a_q, b_q);
         if (a_q == 0) return null; // i.e., both exhausted
@@ -166,25 +161,6 @@ fn nextValidTertiary(cea: []const u32, i: *usize) u16 {
         i.* += 1;
 
         if (nextTertiary != 0) return nextTertiary;
-    }
-
-    return 0;
-}
-
-fn nextValidShifted(cea: []const u32, i: *usize) u16 {
-    while (i.* < cea.len) {
-        const nextWeights = cea[i.*];
-        if (nextWeights == std.math.maxInt(u32)) return 0;
-
-        if (!variability(nextWeights) and tertiary(nextWeights) == 0) {
-            i.* += 1;
-            continue;
-        }
-
-        const nextPrimary = primary(nextWeights);
-        i.* += 1;
-
-        if (nextPrimary != 0) return nextPrimary;
     }
 
     return 0;
