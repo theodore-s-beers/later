@@ -13,7 +13,7 @@ pub fn cmpIncremental(a_cea: []const u32, b_cea: []const u32, shifting: bool) st
     // If not shifting, stop here
     if (!shifting) return .eq;
 
-    if (compareQuaternary(a_cea, b_cea)) |o| return o;
+    if (comparePrimary(a_cea, b_cea)) |o| return o; // i.e., compare "quaternary" weights
 
     // If we got to this point, return Equal. The efficiency of processing and comparing sort keys
     // incrementally, for both strings at once, relies on the rarity of needing to continue all the
@@ -81,21 +81,6 @@ fn compareTertiary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
 
         if (a_t != b_t) return util.cmp(u16, a_t, b_t);
         if (a_t == 0) return null; // i.e., both exhausted
-    }
-
-    unreachable;
-}
-
-fn compareQuaternary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
-    var i_a: usize = 0;
-    var i_b: usize = 0;
-
-    while (true) {
-        const a_q = nextValidPrimary(a_cea, &i_a);
-        const b_q = nextValidPrimary(b_cea, &i_b);
-
-        if (a_q != b_q) return util.cmp(u16, a_q, b_q);
-        if (a_q == 0) return null; // i.e., both exhausted
     }
 
     unreachable;
