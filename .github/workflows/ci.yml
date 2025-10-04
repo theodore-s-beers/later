@@ -18,5 +18,5 @@ jobs:
           persist-credentials: false
       - uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f
         with:
-          zig-version: 0.15.1
+          version: 0.15.1
       - run: zig build test --release=safe
