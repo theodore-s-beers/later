@@ -20,7 +20,7 @@ pub fn generateCEA(coll: *Collator, offset: usize, side_b: bool) !void {
     outer: while (left < input_length) {
         const left_val = char_vals.items[left];
 
-        try util.growList(cea, cea_idx);
+        try util.growList(coll.alloc, cea, cea_idx);
 
         //
         // OUTCOME 1

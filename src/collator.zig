@@ -57,13 +57,13 @@ pub const Collator = struct {
 
             .a_chars = try .initCapacity(alloc, 64),
             .b_chars = try .initCapacity(alloc, 64),
-            .a_cea = .init(alloc),
-            .b_cea = .init(alloc),
+            .a_cea = try .initCapacity(alloc, 64),
+            .b_cea = try .initCapacity(alloc, 64),
         };
 
         // In this case we want len == capacity
-        try coll.a_cea.resize(64);
-        try coll.b_cea.resize(64);
+        try coll.a_cea.resize(alloc, 64);
+        try coll.b_cea.resize(alloc, 64);
 
         return coll;
     }
@@ -73,10 +73,10 @@ pub const Collator = struct {
     }
 
     pub fn deinit(self: *Collator) void {
-        self.a_chars.deinit();
-        self.b_chars.deinit();
-        self.a_cea.deinit();
-        self.b_cea.deinit();
+        self.a_chars.deinit(self.alloc);
+        self.b_chars.deinit(self.alloc);
+        self.a_cea.deinit(self.alloc);
+        self.b_cea.deinit(self.alloc);
 
         if (self.decomp_map) |*map| map.deinit();
         if (self.fcd_map) |*map| map.deinit();
@@ -97,8 +97,8 @@ pub const Collator = struct {
         if (std.mem.eql(u8, a, b)) return .eq;
 
         // Decode function clears input list
-        try decode.bytesToCodepoints(&self.a_chars, a);
-        try decode.bytesToCodepoints(&self.b_chars, b);
+        try decode.bytesToCodepoints(self.alloc, &self.a_chars, a);
+        try decode.bytesToCodepoints(self.alloc, &self.b_chars, b);
 
         // ASCII fast path
         if (ascii.tryAscii(self.a_chars.items, self.b_chars.items)) |ord| return ord;
