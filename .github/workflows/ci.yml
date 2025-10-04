@@ -7,10 +7,16 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v2
+        with:
+          persist-credentials: false
+      - uses: mlugg/setup-zig@8d6198c65fb0feaa111df26e6b467fea8345e46f
+        with:
+          zig-version: 0.15.1
       - run: zig build test --release=safe
