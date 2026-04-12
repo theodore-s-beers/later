@@ -6,12 +6,17 @@ const std = @import("std");
 
 pub const Collator = @import("collator").Collator;
 
-pub fn collateComparator(context: *Collator, a: []const u8, b: []const u8) bool {
-    return context.collate(a, b) == .lt;
+pub const SortContext = struct {
+    coll: *Collator,
+    io: std.Io,
+};
+
+pub fn collateComparator(context: *SortContext, a: []const u8, b: []const u8) bool {
+    return context.coll.collate(context.io, a, b) == .lt;
 }
 
-pub fn collateComparatorFallible(context: *Collator, a: []const u8, b: []const u8) bool {
-    const ord = context.collateFallible(a, b) catch {
+pub fn collateComparatorFallible(context: *SortContext, a: []const u8, b: []const u8) bool {
+    const ord = context.coll.collateFallible(context.io, a, b) catch {
         std.debug.print("Allocation failure during collation\n", .{});
         return false; // Not ideal, but the return type must be `bool`
     };
@@ -23,17 +28,16 @@ pub fn collateComparatorFallible(context: *Collator, a: []const u8, b: []const u
 // Conformance test function and helper
 //
 
-fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) void {
-    const start_time = std.time.microTimestamp();
-    defer {
-        const end_time = std.time.microTimestamp();
-        const duration_ms = @as(f64, @floatFromInt(end_time - start_time)) / 1_000.0;
-        std.debug.print("{s}: {d:.2}ms\n", .{ path, duration_ms });
-    }
+const cldr_non_ignorable_data =
+    @embedFile("test-data/CollationTest_CLDR_NON_IGNORABLE_SHORT.txt");
+const cldr_shifted_data =
+    @embedFile("test-data/CollationTest_CLDR_SHIFTED_SHORT.txt");
+const ducet_non_ignorable_data =
+    @embedFile("test-data/CollationTest_NON_IGNORABLE_SHORT.txt");
+const ducet_shifted_data =
+    @embedFile("test-data/CollationTest_SHIFTED_SHORT.txt");
 
-    const test_data = std.fs.cwd().readFileAlloc(alloc, path, 4 * 1024 * 1024) catch unreachable;
-    defer alloc.free(test_data);
-
+fn conformance(io: std.Io, test_data: []const u8, coll: *Collator) void {
     // Stack alloc for test strings
     var buf: [64]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&buf);
@@ -61,7 +65,7 @@ fn conformance(alloc: std.mem.Allocator, path: []const u8, coll: *Collator) void
             test_string.appendSliceAssumeCapacity(utf8_bytes[0..len]);
         }
 
-        const comparison = coll.collate(test_string.items, max_line.items);
+        const comparison = coll.collate(io, test_string.items, max_line.items);
         if (comparison == .lt) std.debug.panic("Invalid collation order at line {}\n", .{i});
 
         std.mem.swap(std.ArrayList(u8), &max_line, &test_string);
@@ -100,38 +104,42 @@ fn utf8Encode(c: u21, out: []u8) u3 {
 
 test "cldr non-ignorable" {
     const alloc = std.testing.allocator;
+    const io = std.Io.failing;
 
     var coll = try Collator.init(alloc, .cldr, false, false);
     defer coll.deinit();
 
-    conformance(alloc, "test-data/CollationTest_CLDR_NON_IGNORABLE_SHORT.txt", &coll);
+    conformance(io, cldr_non_ignorable_data, &coll);
 }
 
 test "cldr shifted" {
     const alloc = std.testing.allocator;
+    const io = std.Io.failing;
 
     var coll = try Collator.init(alloc, .cldr, true, false);
     defer coll.deinit();
 
-    conformance(alloc, "test-data/CollationTest_CLDR_SHIFTED_SHORT.txt", &coll);
+    conformance(io, cldr_shifted_data, &coll);
 }
 
 test "ducet non-ignorable" {
     const alloc = std.testing.allocator;
+    const io = std.Io.failing;
 
     var coll = try Collator.init(alloc, .ducet, false, false);
     defer coll.deinit();
 
-    conformance(alloc, "test-data/CollationTest_NON_IGNORABLE_SHORT.txt", &coll);
+    conformance(io, ducet_non_ignorable_data, &coll);
 }
 
 test "ducet shifted" {
     const alloc = std.testing.allocator;
+    const io = std.Io.failing;
 
     var coll = try Collator.init(alloc, .ducet, true, false);
     defer coll.deinit();
 
-    conformance(alloc, "test-data/CollationTest_SHIFTED_SHORT.txt", &coll);
+    conformance(io, ducet_shifted_data, &coll);
 }
 
 //
@@ -140,9 +148,12 @@ test "ducet shifted" {
 
 test "sort multilingual list of names" {
     const alloc = std.testing.allocator;
+    const io = std.Io.failing;
 
     var coll = try Collator.initDefault(alloc);
     defer coll.deinit();
+
+    var ctx = SortContext{ .coll = &coll, .io = io };
 
     var input = [_][]const u8{
         "چنگیز",
@@ -167,6 +178,6 @@ test "sort multilingual list of names" {
     };
 
     // Try fallible API here
-    std.mem.sortUnstable([]const u8, &input, &coll, collateComparatorFallible);
+    std.mem.sortUnstable([]const u8, &input, &ctx, collateComparatorFallible);
     try std.testing.expectEqualSlices([]const u8, &expected, &input);
 }
