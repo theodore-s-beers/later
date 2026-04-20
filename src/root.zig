@@ -17,7 +17,7 @@ pub fn collateComparator(context: *SortContext, a: []const u8, b: []const u8) bo
 
 pub fn collateComparatorFallible(context: *SortContext, a: []const u8, b: []const u8) bool {
     const ord = context.coll.collateFallible(context.io, a, b) catch {
-        std.debug.print("Allocation failure during collation\n", .{});
+        std.log.err("Allocation failure during collation\n", .{});
         return false; // Not ideal, but the return type must be `bool`
     };
 
