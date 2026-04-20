@@ -2,7 +2,7 @@ const std = @import("std");
 const consts = @import("consts");
 const Collator = @import("collator").Collator;
 
-pub fn findOffset(coll: *Collator, io: std.Io) !usize {
+pub fn findOffset(coll: *Collator) !usize {
     const a = coll.a_chars.items;
     const b = coll.b_chars.items;
     var offset: usize = 0;
@@ -15,9 +15,9 @@ pub fn findOffset(coll: *Collator, io: std.Io) !usize {
 
     if (offset == 0) return 0;
 
-    if (coll.shifting and try coll.getVariable(io, a[offset - 1])) {
+    if (coll.shifting and try coll.getVariable(a[offset - 1])) {
         if (offset > 1) {
-            if (try coll.getVariable(io, a[offset - 2])) return 0;
+            if (try coll.getVariable(a[offset - 2])) return 0;
             return offset - 1;
         }
 
