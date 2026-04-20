@@ -11,12 +11,12 @@ pub const SortContext = struct {
     io: std.Io,
 };
 
-pub fn collateComparator(context: *SortContext, a: []const u8, b: []const u8) bool {
-    return context.coll.collate(context.io, a, b) == .lt;
+pub fn collateComparator(ctx: *SortContext, a: []const u8, b: []const u8) bool {
+    return ctx.coll.collate(ctx.io, a, b) == .lt;
 }
 
-pub fn collateComparatorFallible(context: *SortContext, a: []const u8, b: []const u8) bool {
-    const ord = context.coll.collateFallible(context.io, a, b) catch {
+pub fn collateComparatorFallible(ctx: *SortContext, a: []const u8, b: []const u8) bool {
+    const ord = ctx.coll.collateFallible(ctx.io, a, b) catch {
         std.log.err("Allocation failure during collation\n", .{});
         return false; // Not ideal, but the return type must be `bool`
     };
@@ -25,7 +25,7 @@ pub fn collateComparatorFallible(context: *SortContext, a: []const u8, b: []cons
 }
 
 //
-// Conformance test function and helper
+// Conformance test function and helpers
 //
 
 const cldr_non_ignorable_data =
@@ -43,8 +43,8 @@ fn conformance(io: std.Io, test_data: []const u8, coll: *Collator) void {
     var fba = std.heap.FixedBufferAllocator.init(&buf);
     const stack_alloc = fba.allocator();
 
-    var max_line = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch unreachable;
-    var test_string = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch unreachable;
+    var max_line = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch @panic("Failed to initialize ArrayList");
+    var test_string = std.ArrayList(u8).initCapacity(stack_alloc, 32) catch @panic("Failed to initialize ArrayList");
 
     var line_iter = std.mem.splitScalar(u8, test_data, '\n');
     var i: usize = 0;
@@ -57,7 +57,7 @@ fn conformance(io: std.Io, test_data: []const u8, coll: *Collator) void {
 
         var word_iter = std.mem.splitScalar(u8, line, ' ');
         while (word_iter.next()) |hex| {
-            const val = std.fmt.parseInt(u32, hex, 16) catch unreachable;
+            const val = std.fmt.parseInt(u32, hex, 16) catch @panic("Failed to parse hex code point");
             if (0xD800 <= val and val <= 0xDFFF) continue :outer; // Surrogate code points
 
             var utf8_bytes: [4]u8 = undefined;
