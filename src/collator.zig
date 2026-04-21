@@ -57,11 +57,18 @@ pub const Collator = struct {
 
             .low_table = low_table,
 
-            .a_chars = try .initCapacity(alloc, 64),
-            .b_chars = try .initCapacity(alloc, 64),
-            .a_cea = try .initCapacity(alloc, 64),
-            .b_cea = try .initCapacity(alloc, 64),
+            .a_chars = .empty,
+            .b_chars = .empty,
+            .a_cea = .empty,
+            .b_cea = .empty,
         };
+
+        errdefer coll.deinit();
+
+        coll.a_chars = try .initCapacity(alloc, 64);
+        coll.b_chars = try .initCapacity(alloc, 64);
+        coll.a_cea = try .initCapacity(alloc, 64);
+        coll.b_cea = try .initCapacity(alloc, 64);
 
         // In this case we want len == capacity
         try coll.a_cea.resize(alloc, 64);
