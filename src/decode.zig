@@ -7,15 +7,19 @@ pub fn bytesToCodepoints(alloc: std.mem.Allocator, codepoints: *std.ArrayList(u3
     var state: u8 = UTF8_ACCEPT;
     var codepoint: u32 = 0;
 
-    for (input) |b| {
+    var i: usize = 0;
+    while (i < input.len) {
+        const b = input[i];
+        const prev_state = state;
         const new_state = decode(&state, &codepoint, b);
-
         if (new_state == UTF8_REJECT) {
             codepoints.appendAssumeCapacity(REPLACEMENT);
             state = UTF8_ACCEPT;
+            if (prev_state != UTF8_ACCEPT) continue; // retry same byte
         } else if (new_state == UTF8_ACCEPT) {
             codepoints.appendAssumeCapacity(codepoint);
         }
+        i += 1;
     }
 
     // If we ended in an incomplete sequence, emit replacement
