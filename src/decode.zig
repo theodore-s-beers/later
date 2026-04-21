@@ -82,3 +82,123 @@ test "decode 4-byte code point" {
     try testing.expectEqual(1, result.items.len);
     try testing.expectEqual(0x1BC9E, result.items[0]);
 }
+
+test "invalid sequence does not consume following ASCII bytes" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    const input = [_]u8{ 0xC2, 0x41, 0x42 };
+    const expected = [_]u32{ REPLACEMENT, 0x41, 0x42 };
+
+    var result = std.ArrayList(u32).empty;
+    defer result.deinit(alloc);
+
+    try bytesToCodepoints(alloc, &result, &input);
+
+    try testing.expectEqualSlices(u32, &expected, result.items);
+}
+
+test "invalid sequence restarts from next valid starter" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    const input = [_]u8{ 0xE2, 0x28, 0xA1 };
+    const expected = [_]u32{ REPLACEMENT, 0x28, REPLACEMENT };
+
+    var result = std.ArrayList(u32).empty;
+    defer result.deinit(alloc);
+
+    try bytesToCodepoints(alloc, &result, &input);
+
+    try testing.expectEqualSlices(u32, &expected, result.items);
+}
+
+test "non-shortest form sequences become replacement characters" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    const input = [_]u8{ 0xC0, 0xAF, 0xE0, 0x80, 0xBF, 0xF0, 0x81, 0x82, 0x41 };
+    const expected = [_]u32{
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        0x41,
+    };
+
+    var result = std.ArrayList(u32).empty;
+    defer result.deinit(alloc);
+
+    try bytesToCodepoints(alloc, &result, &input);
+
+    try testing.expectEqualSlices(u32, &expected, result.items);
+}
+
+test "surrogate UTF-8 sequences become replacement characters" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    const input = [_]u8{ 0xED, 0xA0, 0x80, 0xED, 0xBF, 0xBF, 0xED, 0xAF, 0x41 };
+    const expected = [_]u32{
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        0x41,
+    };
+
+    var result = std.ArrayList(u32).empty;
+    defer result.deinit(alloc);
+
+    try bytesToCodepoints(alloc, &result, &input);
+
+    try testing.expectEqualSlices(u32, &expected, result.items);
+}
+
+test "other ill-formed sequences become replacement characters" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    const input = [_]u8{ 0xF4, 0x91, 0x92, 0x93, 0xFF, 0x41, 0x80, 0xBF, 0x42 };
+    const expected = [_]u32{
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        REPLACEMENT,
+        0x41,
+        REPLACEMENT,
+        REPLACEMENT,
+        0x42,
+    };
+
+    var result = std.ArrayList(u32).empty;
+    defer result.deinit(alloc);
+
+    try bytesToCodepoints(alloc, &result, &input);
+
+    try testing.expectEqualSlices(u32, &expected, result.items);
+}
+
+test "truncated sequences become replacement characters" {
+    const testing = std.testing;
+    const alloc = testing.allocator;
+
+    const input = [_]u8{ 0xE1, 0x80, 0xE2, 0xF0, 0x91, 0x92, 0xF1, 0xBF, 0x41 };
+    const expected = [_]u32{ REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, 0x41 };
+
+    var result = std.ArrayList(u32).empty;
+    defer result.deinit(alloc);
+
+    try bytesToCodepoints(alloc, &result, &input);
+
+    try testing.expectEqualSlices(u32, &expected, result.items);
+}
