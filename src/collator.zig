@@ -98,11 +98,7 @@ pub const Collator = struct {
     // Collation
     //
 
-    pub fn collate(self: *Collator, a: []const u8, b: []const u8) std.math.Order {
-        return self.collateFallible(a, b) catch @panic("Allocation failure during collation");
-    }
-
-    pub fn collateFallible(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
+    pub fn collate(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
 
         // Decode function clears input list
@@ -129,6 +125,10 @@ pub const Collator = struct {
         if (ord == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
 
         return ord;
+    }
+
+    pub fn collateOrPanic(self: *Collator, a: []const u8, b: []const u8) std.math.Order {
+        return self.collate(a, b) catch @panic("Allocation failure during collation");
     }
 
     //

@@ -6,17 +6,8 @@ const std = @import("std");
 
 pub const Collator = @import("collator").Collator;
 
-pub fn collateComparator(coll: *Collator, a: []const u8, b: []const u8) bool {
-    return coll.collate(a, b) == .lt;
-}
-
-pub fn collateComparatorFallible(coll: *Collator, a: []const u8, b: []const u8) bool {
-    const ord = coll.collateFallible(a, b) catch {
-        std.log.err("Allocation failure during collation\n", .{});
-        return false; // Not ideal, but the return type must be `bool`
-    };
-
-    return ord == .lt;
+pub fn collateComparatorOrPanic(coll: *Collator, a: []const u8, b: []const u8) bool {
+    return coll.collateOrPanic(a, b) == .lt;
 }
 
 //
@@ -60,7 +51,7 @@ fn conformance(test_data: []const u8, coll: *Collator) void {
             test_string.appendSliceAssumeCapacity(utf8_bytes[0..len]);
         }
 
-        const comparison = coll.collate(test_string.items, max_line.items);
+        const comparison = coll.collateOrPanic(test_string.items, max_line.items);
         if (comparison == .lt) std.debug.panic("Invalid collation order at line {}\n", .{i});
 
         std.mem.swap(std.ArrayList(u8), &max_line, &test_string);
@@ -165,7 +156,6 @@ test "sort multilingual list of names" {
         "صدام",
     };
 
-    // Try fallible API here
-    std.mem.sortUnstable([]const u8, &input, &coll, collateComparatorFallible);
+    std.mem.sortUnstable([]const u8, &input, &coll, collateComparatorOrPanic);
     try std.testing.expectEqualSlices([]const u8, &expected, &input);
 }
