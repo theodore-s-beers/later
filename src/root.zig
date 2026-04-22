@@ -11,17 +11,8 @@ pub fn collateComparatorOrPanic(coll: *Collator, a: []const u8, b: []const u8) b
 }
 
 //
-// Conformance test function and helpers
+// Conformance test function and helper
 //
-
-const cldr_non_ignorable_data =
-    @embedFile("test-data/CollationTest_CLDR_NON_IGNORABLE_SHORT.txt");
-const cldr_shifted_data =
-    @embedFile("test-data/CollationTest_CLDR_SHIFTED_SHORT.txt");
-const ducet_non_ignorable_data =
-    @embedFile("test-data/CollationTest_NON_IGNORABLE_SHORT.txt");
-const ducet_shifted_data =
-    @embedFile("test-data/CollationTest_SHIFTED_SHORT.txt");
 
 fn conformance(test_data: []const u8, coll: *Collator) void {
     // Stack alloc for test strings
@@ -87,6 +78,15 @@ fn utf8Encode(c: u21, out: []u8) u3 {
 //
 // Conformance tests
 //
+
+const cldr_non_ignorable_data =
+    @embedFile("test-data/CollationTest_CLDR_NON_IGNORABLE_SHORT.txt");
+const cldr_shifted_data =
+    @embedFile("test-data/CollationTest_CLDR_SHIFTED_SHORT.txt");
+const ducet_non_ignorable_data =
+    @embedFile("test-data/CollationTest_NON_IGNORABLE_SHORT.txt");
+const ducet_shifted_data =
+    @embedFile("test-data/CollationTest_SHIFTED_SHORT.txt");
 
 test "cldr non-ignorable" {
     const alloc = std.testing.allocator;
