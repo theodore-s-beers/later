@@ -112,7 +112,7 @@ pub const Collator = struct {
         try normalize.makeNFD(self, &self.a_chars);
         try normalize.makeNFD(self, &self.b_chars);
 
-        const offset = try prefix.findOffset(self); // Default 0
+        const offset = prefix.findOffset(self); // Default 0
 
         // Prefix trimming may reveal that one list is a prefix of the other
         if (self.a_chars.items[offset..].len == 0 or self.b_chars.items[offset..].len == 0) {
