@@ -11,8 +11,6 @@ const sort_key = @import("sort_key");
 const types = @import("types");
 const util = @import("util");
 
-const mutex_io = std.Io.failing;
-
 pub const Collator = struct {
     alloc: std.mem.Allocator,
 
@@ -27,8 +25,6 @@ pub const Collator = struct {
 
     a_cea: std.ArrayList(u32),
     b_cea: std.ArrayList(u32),
-
-    mutex: std.Io.Mutex = .init,
 
     decomp_map: ?types.SinglesMap = null,
     fcd_map: ?std.AutoHashMap(u32, u16) = null,
@@ -62,7 +58,6 @@ pub const Collator = struct {
             .a_cea = .empty,
             .b_cea = .empty,
         };
-
         errdefer coll.deinit();
 
         coll.a_chars = try .initCapacity(alloc, 64);
@@ -73,6 +68,12 @@ pub const Collator = struct {
         // In this case we want len == capacity
         try coll.a_cea.resize(alloc, 64);
         try coll.b_cea.resize(alloc, 64);
+
+        coll.decomp_map = try load.loadDecomp(alloc);
+        coll.fcd_map = try load.loadFCD(alloc);
+        coll.multi_map = try load.loadMulti(alloc, table == .cldr);
+        coll.single_map = try load.loadSingle(alloc, table == .cldr);
+        coll.variable_map = try load.loadVariable(alloc);
 
         return coll;
     }
@@ -132,58 +133,26 @@ pub const Collator = struct {
     }
 
     //
-    // Loading data on demand
+    // Helpers for map lookups
     //
 
-    pub fn getDecomp(self: *Collator, codepoint: u32) !?[]const u32 {
-        if (self.decomp_map) |*map| return map.map.get(codepoint);
-
-        self.mutex.lockUncancelable(mutex_io);
-        defer self.mutex.unlock(mutex_io);
-
-        if (self.decomp_map == null) self.decomp_map = try load.loadDecomp(self.alloc);
+    pub fn getDecomp(self: *Collator, codepoint: u32) ?[]const u32 {
         return self.decomp_map.?.map.get(codepoint);
     }
 
-    pub fn getFCD(self: *Collator, codepoint: u32) !?u16 {
-        if (self.fcd_map) |*map| return map.get(codepoint);
-
-        self.mutex.lockUncancelable(mutex_io);
-        defer self.mutex.unlock(mutex_io);
-
-        if (self.fcd_map == null) self.fcd_map = try load.loadFCD(self.alloc);
+    pub fn getFCD(self: *Collator, codepoint: u32) ?u16 {
         return self.fcd_map.?.get(codepoint);
     }
 
-    pub fn getMulti(self: *Collator, codepoints: u64) !?[]const u32 {
-        if (self.multi_map) |*map| return map.map.get(codepoints);
-
-        self.mutex.lockUncancelable(mutex_io);
-        defer self.mutex.unlock(mutex_io);
-
-        if (self.multi_map == null)
-            self.multi_map = try load.loadMulti(self.alloc, self.table == .cldr);
+    pub fn getMulti(self: *Collator, codepoints: u64) ?[]const u32 {
         return self.multi_map.?.map.get(codepoints);
     }
 
-    pub fn getSingle(self: *Collator, codepoint: u32) !?[]const u32 {
-        if (self.single_map) |*map| return map.map.get(codepoint);
-
-        self.mutex.lockUncancelable(mutex_io);
-        defer self.mutex.unlock(mutex_io);
-
-        if (self.single_map == null)
-            self.single_map = try load.loadSingle(self.alloc, self.table == .cldr);
+    pub fn getSingle(self: *Collator, codepoint: u32) ?[]const u32 {
         return self.single_map.?.map.get(codepoint);
     }
 
-    pub fn getVariable(self: *Collator, codepoint: u32) !bool {
-        if (self.variable_map) |*map| return map.contains(codepoint);
-
-        self.mutex.lockUncancelable(mutex_io);
-        defer self.mutex.unlock(mutex_io);
-
-        if (self.variable_map == null) self.variable_map = try load.loadVar(self.alloc);
+    pub fn getVariable(self: *Collator, codepoint: u32) bool {
         return self.variable_map.?.contains(codepoint);
     }
 };

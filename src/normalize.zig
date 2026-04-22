@@ -47,13 +47,13 @@ const JAMO_LV = [399]u32{
 };
 
 pub fn makeNFD(coll: *Collator, input: *std.ArrayList(u32)) !void {
-    if (try fcd(coll, input.items)) return;
+    if (fcd(coll, input.items)) return;
 
     try decompose(coll, input);
     reorder(input.items);
 }
 
-fn fcd(coll: *Collator, input: []const u32) !bool {
+fn fcd(coll: *Collator, input: []const u32) bool {
     var prev_trail_cc: u8 = 0;
 
     for (input) |c| {
@@ -65,7 +65,7 @@ fn fcd(coll: *Collator, input: []const u32) !bool {
         if (c == 0x0F81 or (0xAC00 <= c and c <= 0xD7A3)) return false;
 
         const lead_cc, const trail_cc = blk: {
-            if (try coll.getFCD(c)) |vals| {
+            if (coll.getFCD(c)) |vals| {
                 const bytes = std.mem.toBytes(std.mem.bigToNative(u16, vals));
                 break :blk .{ bytes[0], bytes[1] };
             } else {
@@ -101,7 +101,7 @@ fn decompose(coll: *Collator, input: *std.ArrayList(u32)) !void {
             continue;
         }
 
-        if (try coll.getDecomp(code_point)) |decomp| {
+        if (coll.getDecomp(code_point)) |decomp| {
             try input.replaceRange(coll.alloc, i, 1, decomp);
             i += decomp.len;
             continue;

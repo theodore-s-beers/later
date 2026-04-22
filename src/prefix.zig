@@ -15,9 +15,9 @@ pub fn findOffset(coll: *Collator) !usize {
 
     if (offset == 0) return 0;
 
-    if (coll.shifting and try coll.getVariable(a[offset - 1])) {
+    if (coll.shifting and coll.getVariable(a[offset - 1])) {
         if (offset > 1) {
-            if (try coll.getVariable(a[offset - 2])) return 0;
+            if (coll.getVariable(a[offset - 2])) return 0;
             return offset - 1;
         }
 
