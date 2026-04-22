@@ -116,7 +116,8 @@ pub const Collator = struct {
 
         // Prefix trimming may reveal that one list is a prefix of the other
         if (self.a_chars.items[offset..].len == 0 or self.b_chars.items[offset..].len == 0) {
-            return util.cmp(usize, self.a_chars.items.len, self.b_chars.items.len);
+            const prefixOrd = util.cmp(usize, self.a_chars.items.len, self.b_chars.items.len);
+            if (prefixOrd != .eq or !self.tiebreak) return prefixOrd;
         }
 
         try cea.generateCEA(self, offset, false); // a
