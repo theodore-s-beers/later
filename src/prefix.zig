@@ -2,7 +2,7 @@ const std = @import("std");
 const consts = @import("consts");
 const Collator = @import("collator").Collator;
 
-pub fn findOffset(coll: *Collator) !usize {
+pub fn findOffset(coll: *Collator) usize {
     const a = coll.a_chars.items;
     const b = coll.b_chars.items;
     var offset: usize = 0;
