@@ -1,6 +1,10 @@
 const std = @import("std");
 
-pub fn bytesToCodepoints(alloc: std.mem.Allocator, codepoints: *std.ArrayList(u32), input: []const u8) !void {
+pub fn bytesToCodepoints(
+    alloc: std.mem.Allocator,
+    codepoints: *std.ArrayList(u32),
+    input: []const u8,
+) !void {
     codepoints.clearRetainingCapacity();
     try codepoints.ensureTotalCapacity(alloc, input.len);
 

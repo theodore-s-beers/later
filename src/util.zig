@@ -160,7 +160,12 @@ pub fn packWeights(variable: bool, primary: u16, secondary: u16, tertiary: u8) u
     return upper | lower;
 }
 
-pub fn removePulled(char_vals: *std.ArrayList(u32), i: usize, input_length: *usize, try_two: bool) void {
+pub fn removePulled(
+    char_vals: *std.ArrayList(u32),
+    i: usize,
+    input_length: *usize,
+    try_two: bool,
+) void {
     _ = char_vals.orderedRemove(i);
     input_length.* -= 1;
 
