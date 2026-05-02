@@ -92,7 +92,7 @@ fn expectDecoded(input: []const u8, expected: []const u32) !void {
     try testing.expectEqualSlices(u32, expected, result.items);
 }
 
-test "decode 4-byte code point" {
+test "decode 4-byte scalar" {
     const testing = std.testing;
     const alloc = testing.allocator;
 
@@ -107,7 +107,7 @@ test "decode 4-byte code point" {
     try testing.expectEqual(0x1BC9E, result.items[0]);
 }
 
-test "invalid sequence does not consume following ASCII bytes" {
+test "invalid sequence does not consume following ASCII" {
     const input = [_]u8{ 0xC2, 0x41, 0x42 };
     const expected = [_]u32{ REPLACEMENT, 0x41, 0x42 };
 
@@ -121,7 +121,7 @@ test "invalid sequence restarts from next valid starter" {
     try expectDecoded(&input, &expected);
 }
 
-test "non-shortest form sequences become replacement characters" {
+test "overlong sequences become replacements" {
     const input = [_]u8{ 0xC0, 0xAF, 0xE0, 0x80, 0xBF, 0xF0, 0x81, 0x82, 0x41 };
     const expected = [_]u32{
         REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT,
@@ -131,7 +131,7 @@ test "non-shortest form sequences become replacement characters" {
     try expectDecoded(&input, &expected);
 }
 
-test "surrogate UTF-8 sequences become replacement characters" {
+test "surrogate sequences become replacements" {
     const input = [_]u8{ 0xED, 0xA0, 0x80, 0xED, 0xBF, 0xBF, 0xED, 0xAF, 0x41 };
     const expected = [_]u32{
         REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT,
@@ -141,7 +141,7 @@ test "surrogate UTF-8 sequences become replacement characters" {
     try expectDecoded(&input, &expected);
 }
 
-test "other ill-formed sequences become replacement characters" {
+test "other ill-formed sequences become replacements" {
     const input = [_]u8{ 0xF4, 0x91, 0x92, 0x93, 0xFF, 0x41, 0x80, 0xBF, 0x42 };
     const expected = [_]u32{
         REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, 0x41,
@@ -151,14 +151,14 @@ test "other ill-formed sequences become replacement characters" {
     try expectDecoded(&input, &expected);
 }
 
-test "truncated sequences become replacement characters" {
+test "truncated sequences become replacements" {
     const input = [_]u8{ 0xE1, 0x80, 0xE2, 0xF0, 0x91, 0x92, 0xF1, 0xBF, 0x41 };
     const expected = [_]u32{ REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, 0x41 };
 
     try expectDecoded(&input, &expected);
 }
 
-test "decode boundary valid UTF-8 scalars" {
+test "decode UTF-8 scalar edge values" {
     const input = [_]u8{
         0x00, 0x7F, 0xC2, 0x80, 0xDF, 0xBF, 0xE0, 0xA0,
         0x80, 0xEF, 0xBF, 0xBF, 0xF0, 0x90, 0x80, 0x80,
@@ -169,21 +169,21 @@ test "decode boundary valid UTF-8 scalars" {
     try expectDecoded(&input, &expected);
 }
 
-test "decode mixed valid and invalid UTF-8 stream" {
+test "decode mixed valid and invalid stream" {
     const input = [_]u8{ 0x41, 0xC2, 0x42, 0xE2, 0x82, 0xAC, 0x80, 0xF0, 0x9F, 0x98, 0x80 };
     const expected = [_]u32{ 0x41, REPLACEMENT, 0x42, 0x20AC, REPLACEMENT, 0x1F600 };
 
     try expectDecoded(&input, &expected);
 }
 
-test "out of range UTF-8 prefix does not consume following bytes" {
+test "out-of-range prefix does not consume following bytes" {
     const input = [_]u8{ 0xF4, 0x90, 0x80, 0x80 };
     const expected = [_]u32{ REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT };
 
     try expectDecoded(&input, &expected);
 }
 
-test "truncated sequences at EOF emit one replacement each" {
+test "truncated sequence at EOF emits one replacement" {
     try expectDecoded(&[_]u8{0xC2}, &[_]u32{REPLACEMENT});
     try expectDecoded(&[_]u8{ 0xE1, 0x80 }, &[_]u32{REPLACEMENT});
     try expectDecoded(&[_]u8{ 0xF1, 0x80, 0x80 }, &[_]u32{REPLACEMENT});
