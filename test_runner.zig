@@ -2,9 +2,9 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub fn main(init: std.process.Init) void {
-    const io = init.io;
-
     if (builtin.test_functions.len == 0) return;
+
+    const io = init.io;
 
     var pass: usize = 0;
     var fail: usize = 0;
@@ -35,7 +35,6 @@ pub fn main(init: std.process.Init) void {
                 status = .fail;
 
                 std.debug.print("\nFAIL: {s}: {s}\n", .{ t.name, @errorName(err) });
-
                 if (@errorReturnTrace()) |trace| {
                     std.debug.dumpErrorReturnTrace(trace);
                 }
@@ -43,7 +42,6 @@ pub fn main(init: std.process.Init) void {
         }
 
         var leaked = false;
-
         if (std.testing.allocator_instance.deinit() == .leak) {
             leak += 1;
             leaked = true;
