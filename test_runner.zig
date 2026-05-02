@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub fn main(init: std.process.Init) !void {
+pub fn main(init: std.process.Init) void {
     const io = init.io;
 
     if (builtin.test_functions.len == 0) return;
