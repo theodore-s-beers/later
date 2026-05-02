@@ -131,43 +131,84 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lib);
 
-    const lib_unit_tests = b.addTest(.{ .root_module = lib_mod });
+    const test_runner = b.path("test_runner.zig");
+
+    const lib_unit_tests = b.addTest(.{
+        .root_module = lib_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
-    const ascii_unit_tests = b.addTest(.{ .root_module = ascii_mod });
+    const ascii_unit_tests = b.addTest(.{
+        .root_module = ascii_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_ascii_unit_tests = b.addRunArtifact(ascii_unit_tests);
 
-    const ccc_unit_tests = b.addTest(.{ .root_module = ccc_mod });
+    const ccc_unit_tests = b.addTest(.{
+        .root_module = ccc_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_ccc_unit_tests = b.addRunArtifact(ccc_unit_tests);
 
-    const cea_unit_tests = b.addTest(.{ .root_module = cea_mod });
+    const cea_unit_tests = b.addTest(.{
+        .root_module = cea_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_cea_unit_tests = b.addRunArtifact(cea_unit_tests);
 
-    const collator_unit_tests = b.addTest(.{ .root_module = collator_mod });
+    const collator_unit_tests = b.addTest(.{
+        .root_module = collator_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_collator_unit_tests = b.addRunArtifact(collator_unit_tests);
 
-    const consts_unit_tests = b.addTest(.{ .root_module = consts_mod });
+    const consts_unit_tests = b.addTest(.{
+        .root_module = consts_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_consts_unit_tests = b.addRunArtifact(consts_unit_tests);
 
-    const decode_unit_tests = b.addTest(.{ .root_module = decode_mod });
+    const decode_unit_tests = b.addTest(.{
+        .root_module = decode_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_decode_unit_tests = b.addRunArtifact(decode_unit_tests);
 
-    const load_unit_tests = b.addTest(.{ .root_module = load_mod });
+    const load_unit_tests = b.addTest(.{
+        .root_module = load_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_load_unit_tests = b.addRunArtifact(load_unit_tests);
 
-    const normalize_unit_tests = b.addTest(.{ .root_module = normalize_mod });
+    const normalize_unit_tests = b.addTest(.{
+        .root_module = normalize_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_normalize_unit_tests = b.addRunArtifact(normalize_unit_tests);
 
-    const prefix_unit_tests = b.addTest(.{ .root_module = prefix_mod });
+    const prefix_unit_tests = b.addTest(.{
+        .root_module = prefix_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_prefix_unit_tests = b.addRunArtifact(prefix_unit_tests);
 
-    const sort_key_unit_tests = b.addTest(.{ .root_module = sort_key_mod });
+    const sort_key_unit_tests = b.addTest(.{
+        .root_module = sort_key_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_sort_key_unit_tests = b.addRunArtifact(sort_key_unit_tests);
 
-    const types_unit_tests = b.addTest(.{ .root_module = types_mod });
+    const types_unit_tests = b.addTest(.{
+        .root_module = types_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_types_unit_tests = b.addRunArtifact(types_unit_tests);
 
-    const util_unit_tests = b.addTest(.{ .root_module = util_mod });
+    const util_unit_tests = b.addTest(.{
+        .root_module = util_mod,
+        .test_runner = .{ .path = test_runner, .mode = .simple },
+    });
     const run_util_unit_tests = b.addRunArtifact(util_unit_tests);
 
     const test_step = b.step("test", "Run unit tests");
