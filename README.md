@@ -8,7 +8,7 @@ collation order of the Common Locale Data Repository (CLDR). You can verify this
 by running the tests:
 
 ```sh
-zig build test --summary line --release=safe
+zig build test --release=safe
 ```
 
 ## Usage example
