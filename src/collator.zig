@@ -12,6 +12,9 @@ const types = @import("types");
 const util = @import("util");
 
 pub const Collator = struct {
+    pub const InitError = error{OutOfMemory};
+    pub const CollateError = error{OutOfMemory};
+
     alloc: std.mem.Allocator,
 
     table: types.CollationTable = .cldr,
@@ -41,7 +44,7 @@ pub const Collator = struct {
         table: types.CollationTable,
         shifting: bool,
         tiebreak: bool,
-    ) !Collator {
+    ) InitError!Collator {
         const low_table: [183]u32 = if (table == .cldr) consts.LOW_CLDR else consts.LOW;
 
         var coll = Collator{
@@ -78,7 +81,7 @@ pub const Collator = struct {
         return coll;
     }
 
-    pub fn initDefault(alloc: std.mem.Allocator) !Collator {
+    pub fn initDefault(alloc: std.mem.Allocator) InitError!Collator {
         return try Collator.init(alloc, .cldr, true, true);
     }
 
@@ -99,7 +102,7 @@ pub const Collator = struct {
     // Collation
     //
 
-    pub fn collate(self: *Collator, a: []const u8, b: []const u8) !std.math.Order {
+    pub fn collate(self: *Collator, a: []const u8, b: []const u8) CollateError!std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
 
         // Decode function clears input list
