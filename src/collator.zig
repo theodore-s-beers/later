@@ -3,7 +3,6 @@ const std = @import("std");
 const ascii = @import("ascii");
 const cea = @import("cea");
 const consts = @import("consts");
-const decode = @import("decode");
 const load = @import("load");
 const normalize = @import("normalize");
 const prefix = @import("prefix");
@@ -105,12 +104,8 @@ pub const Collator = struct {
     pub fn collate(self: *Collator, a: []const u8, b: []const u8) CollateError!std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
 
-        // Decode function clears input list
-        try decode.bytesToCodepoints(self.alloc, &self.a_chars, a);
-        try decode.bytesToCodepoints(self.alloc, &self.b_chars, b);
-
-        // ASCII fast path
-        if (ascii.tryAscii(self.a_chars.items, self.b_chars.items)) |ord| return ord;
+        if (try ascii.fillCodepointsAndCompareAscii(self.alloc, &self.a_chars, &self.b_chars, a, b)) |ord|
+            return ord;
 
         try normalize.makeNFD(self, &self.a_chars);
         try normalize.makeNFD(self, &self.b_chars);

@@ -6,30 +6,45 @@ pub fn bytesToCodepoints(
     input: []const u8,
 ) !void {
     codepoints.clearRetainingCapacity();
-    try codepoints.ensureTotalCapacity(alloc, input.len);
+    var iter = CodepointIterator{ .input = input };
+    try iter.appendRemaining(alloc, codepoints);
+}
 
-    var state: u8 = UTF8_ACCEPT;
-    var codepoint: u32 = 0;
+pub const CodepointIterator = struct {
+    input: []const u8,
+    index: usize = 0,
 
-    var i: usize = 0;
-    while (i < input.len) {
-        const prev_state = state;
-        const new_state = decode(&state, &codepoint, input[i]);
+    pub fn next(self: *CodepointIterator) ?u32 {
+        var state: u8 = UTF8_ACCEPT;
+        var codepoint: u32 = 0;
 
-        if (new_state == UTF8_REJECT) {
-            codepoints.appendAssumeCapacity(REPLACEMENT);
-            state = UTF8_ACCEPT;
-            if (prev_state != UTF8_ACCEPT) continue; // Retry same byte
-        } else if (new_state == UTF8_ACCEPT) {
-            codepoints.appendAssumeCapacity(codepoint);
+        while (self.index < self.input.len) {
+            const prev_state = state;
+            const new_state = decode(&state, &codepoint, self.input[self.index]);
+
+            if (new_state == UTF8_REJECT) {
+                // Retry a rejected continuation as a new starter on the next call.
+                if (prev_state == UTF8_ACCEPT) self.index += 1;
+                return REPLACEMENT;
+            }
+
+            self.index += 1;
+            if (new_state == UTF8_ACCEPT) return codepoint;
         }
 
-        i += 1;
+        // An incomplete sequence at EOF emits exactly one replacement.
+        return if (state != UTF8_ACCEPT) REPLACEMENT else null;
     }
 
-    // If we ended in an incomplete sequence, emit replacement
-    if (state != UTF8_ACCEPT) codepoints.appendAssumeCapacity(REPLACEMENT);
-}
+    pub fn appendRemaining(
+        self: *CodepointIterator,
+        alloc: std.mem.Allocator,
+        codepoints: *std.ArrayList(u32),
+    ) !void {
+        try codepoints.ensureUnusedCapacity(alloc, self.input.len - self.index);
+        while (self.next()) |codepoint| codepoints.appendAssumeCapacity(codepoint);
+    }
+};
 
 const UTF8_ACCEPT: u8 = 0;
 const UTF8_REJECT: u8 = 12;

@@ -88,6 +88,7 @@ pub fn build(b: *std.Build) void {
 
     lib_mod.addImport("collator", collator_mod);
 
+    ascii_mod.addImport("decode", decode_mod);
     ascii_mod.addImport("util", util_mod);
 
     cea_mod.addImport("ccc", ccc_mod);
@@ -98,7 +99,6 @@ pub fn build(b: *std.Build) void {
     collator_mod.addImport("ascii", ascii_mod);
     collator_mod.addImport("cea", cea_mod);
     collator_mod.addImport("consts", consts_mod);
-    collator_mod.addImport("decode", decode_mod);
     collator_mod.addImport("load", load_mod);
     collator_mod.addImport("normalize", normalize_mod);
     collator_mod.addImport("prefix", prefix_mod);
