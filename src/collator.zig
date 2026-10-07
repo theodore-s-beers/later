@@ -1,3 +1,4 @@
+const normalization = @import("normalization_tables.zig");
 const std = @import("std");
 
 const ascii = @import("ascii");
@@ -29,10 +30,7 @@ pub const Collator = struct {
     a_cea: std.ArrayList(u32),
     b_cea: std.ArrayList(u32),
 
-    decomp_map: ?types.SinglesMap = null,
-    fcd_map: ?std.AutoHashMap(u32, u16) = null,
     collation: ?CollationData = null,
-    variable_map: ?std.AutoHashMap(u32, void) = null,
 
     //
     // Init, deinit
@@ -71,10 +69,7 @@ pub const Collator = struct {
         try coll.a_cea.resize(alloc, 64);
         try coll.b_cea.resize(alloc, 64);
 
-        coll.decomp_map = try load.loadDecomp(alloc);
-        coll.fcd_map = try load.loadFCD(alloc);
         coll.collation = try load.loadCollation(alloc, table == .cldr);
-        coll.variable_map = try load.loadVariable(alloc);
 
         return coll;
     }
@@ -89,10 +84,7 @@ pub const Collator = struct {
         self.a_cea.deinit(self.alloc);
         self.b_cea.deinit(self.alloc);
 
-        if (self.decomp_map) |*map| map.deinit();
-        if (self.fcd_map) |*map| map.deinit();
         if (self.collation) |*data| data.deinit(self.alloc);
-        if (self.variable_map) |*map| map.deinit();
     }
 
     //
@@ -139,11 +131,13 @@ pub const Collator = struct {
     //
 
     pub fn getDecomp(self: *Collator, codepoint: u32) ?[]const u32 {
-        return self.decomp_map.?.map.get(codepoint);
+        _ = self;
+        return normalization.getDecomp(codepoint);
     }
 
     pub fn getFCD(self: *Collator, codepoint: u32) ?u16 {
-        return self.fcd_map.?.get(codepoint);
+        _ = self;
+        return normalization.getFCD(codepoint);
     }
 
     pub fn getSingle(self: *Collator, codepoint: u32) ?[]const u32 {
@@ -152,7 +146,8 @@ pub const Collator = struct {
     }
 
     pub fn getVariable(self: *Collator, codepoint: u32) bool {
-        return self.variable_map.?.contains(codepoint);
+        _ = self;
+        return normalization.isVariable(codepoint);
     }
 };
 
@@ -200,5 +195,23 @@ test "byte prefix trimming agrees with untrimmed comparisons" {
                 }
             }
         }
+    }
+}
+
+test "indexed normalization lookups preserve missing and boundary values" {
+    var coll = try Collator.initDefault(std.testing.allocator);
+    defer coll.deinit();
+    try std.testing.expectEqualSlices(u32, &.{ 0x65, 0x301 }, coll.getDecomp(0xe9).?);
+    try std.testing.expectEqual(@as(?u16, 0x00e6), coll.getFCD(0xe9));
+    // Undecomposed marks use the separate combining-class table.
+    try std.testing.expect(coll.getFCD(0x301) == null);
+    try std.testing.expect(coll.getVariable(0x20));
+    try std.testing.expect(!coll.getVariable('A'));
+    for ([_]u32{ 0, 'A', 0x10ffff, 0x110000, 0xffffffff }) |cp| {
+        try std.testing.expect(coll.getDecomp(cp) == null);
+        try std.testing.expect(coll.getFCD(cp) == null);
+    }
+    for ([_]u32{ 0x10ffff, 0x110000, 0xffffffff }) |cp| {
+        try std.testing.expect(!coll.getVariable(cp));
     }
 }

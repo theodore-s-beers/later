@@ -113,7 +113,6 @@ pub fn build(b: *std.Build) void {
     collator_mod.addImport("types", types_mod);
     collator_mod.addImport("util", util_mod);
 
-    load_mod.addImport("types", types_mod);
     load_mod.addImport("collation_table", collation_table_mod);
 
     normalize_mod.addImport("ccc", ccc_mod);
