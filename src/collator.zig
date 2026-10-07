@@ -140,20 +140,6 @@ pub const Collator = struct {
         return self.fcd_map.?.get(codepoint);
     }
 
-    pub fn getMulti(self: *Collator, codepoints: u64) ?[]const u32 {
-        const data = &self.collation.?;
-        const mask = 0x1FFFFF;
-        const last: u32 = @intCast(codepoints & mask);
-        const middle: u32 = @intCast((codepoints >> 21) & mask);
-        if (last > 0x10FFFF or middle > 0x10FFFF) return null;
-        if (codepoints >> 42 != 0) {
-            const first: u32 = @intCast(codepoints >> 42);
-            if (first > 0x10FFFF) return null;
-            return data.get3(data.entry(first), middle, last);
-        }
-        return data.get2(data.entry(middle), last);
-    }
-
     pub fn getSingle(self: *Collator, codepoint: u32) ?[]const u32 {
         if (codepoint > 0x10FFFF) return null;
         return self.collation.?.simpleRow(self.collation.?.entry(codepoint));
