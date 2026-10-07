@@ -32,6 +32,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const collation_table_mod = b.createModule(.{
+        .root_source_file = b.path("src/collation_table.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const collator_mod = b.createModule(.{
         .root_source_file = b.path("src/collator.zig"),
         .target = target,
@@ -93,13 +99,13 @@ pub fn build(b: *std.Build) void {
 
     cea_mod.addImport("ccc", ccc_mod);
     cea_mod.addImport("collator", collator_mod);
-    cea_mod.addImport("consts", consts_mod);
     cea_mod.addImport("sort_key", sort_key_mod);
     cea_mod.addImport("util", util_mod);
 
     collator_mod.addImport("ascii", ascii_mod);
     collator_mod.addImport("cea", cea_mod);
     collator_mod.addImport("consts", consts_mod);
+    collator_mod.addImport("collation_table", collation_table_mod);
     collator_mod.addImport("load", load_mod);
     collator_mod.addImport("normalize", normalize_mod);
     collator_mod.addImport("prefix", prefix_mod);
@@ -108,12 +114,12 @@ pub fn build(b: *std.Build) void {
     collator_mod.addImport("util", util_mod);
 
     load_mod.addImport("types", types_mod);
+    load_mod.addImport("collation_table", collation_table_mod);
 
     normalize_mod.addImport("ccc", ccc_mod);
     normalize_mod.addImport("collator", collator_mod);
 
     prefix_mod.addImport("collator", collator_mod);
-    prefix_mod.addImport("consts", consts_mod);
 
     sort_key_mod.addImport("util", util_mod);
 

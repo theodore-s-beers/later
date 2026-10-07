@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const ccc = @import("ccc");
-const consts = @import("consts");
 const sort_key = @import("sort_key");
 const util = @import("util");
 
@@ -85,15 +84,10 @@ const Cursor = struct {
 
         // At this point, we aren't dealing with a low code point
 
-        // Set lookahead depending on left_val. We need 3 in a few cases; 2 in several dozen cases;
-        // and 1 otherwise.
-        const lookahead: usize = blk: {
-            if (std.mem.indexOfScalar(u32, &consts.NEED_THREE, left_val)) |_| {
-                break :blk 3;
-            } else if (std.mem.indexOfScalar(u32, &consts.NEED_TWO, left_val)) |_| {
-                break :blk 2;
-            } else break :blk 1;
-        };
+        // The indexed entry holds both the single-character row and contraction metadata.
+        const table = &coll.collation.?;
+        const entry = table.entry(left_val);
+        const lookahead = table.maxLen(entry);
 
         // If lookahead is 1, or if this is the last item in the vec, we'll take an easier path
         const check_multi = lookahead > 1 and self.input_len - self.left > 1;
@@ -105,7 +99,7 @@ const Cursor = struct {
             // We only had to check for a single code point, and found it, so we can fill in the
             // weights and continue. This is a relatively fast path.
             //
-            if (coll.getSingle(left_val)) |row| {
+            if (table.simpleRow(entry)) |row| {
                 util.fillWeights(cea, row, &self.cea_len, coll.shifting, &self.last_variable);
                 self.left += 1;
                 return;
@@ -133,8 +127,8 @@ const Cursor = struct {
             if (right - self.left == 1) {
                 // If right - self.left == 1 (which cannot be the case in the first iteration), attempts
                 // to find a multi-code-point match have failed. So we pull the value(s) for the
-                // first code point from the singles map. It's guaranteed to be there.
-                const row = coll.getSingle(left_val) orelse unreachable;
+                // first code point from its indexed entry. It's guaranteed to be there.
+                const row = table.simpleRow(entry) orelse unreachable;
 
                 // If we found it, we do still need to check for discontiguous matches
                 // Determine how much further right to look
@@ -171,7 +165,7 @@ const Cursor = struct {
                     // one; fell back to the initial code point; checked for discontiguous matches;
                     // and found something. Anyway, fill in the weights...
                     //
-                    if (coll.getMulti(util.packCodePoints(new_subset))) |new_row| {
+                    if (table.contractionRow(entry, new_subset[1..])) |new_row| {
                         util.fillWeights(cea, new_row, &self.cea_len, coll.shifting, &self.last_variable);
 
                         // Remove the later char(s) used for the discontiguous match
@@ -204,7 +198,7 @@ const Cursor = struct {
             // At this point, we're trying to find a slice; this comes "before" the section above
             const subset = char_vals.items[self.left..right];
 
-            if (coll.getMulti(util.packCodePoints(subset))) |row| {
+            if (table.contractionRow(entry, subset[1..])) |row| {
                 // If we found it, we may need to check for a discontiguous match. But that's only
                 // if we matched on a set of two code points; and we'll only skip over one to find a
                 // possible third.
@@ -228,7 +222,7 @@ const Cursor = struct {
                         // larger discontiguous match; and again found one. For a complicated case,
                         // this is a good path. Fill in the weights...
                         //
-                        if (coll.getMulti(util.packCodePoints(&new_subset))) |new_row| {
+                        if (table.get3(entry, new_subset[1], new_subset[2])) |new_row| {
                             util.fillWeights(cea, new_row, &self.cea_len, coll.shifting, &self.last_variable);
 
                             // Remove the later char used for the discontiguous match

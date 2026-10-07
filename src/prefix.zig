@@ -1,5 +1,4 @@
 const std = @import("std");
-const consts = @import("consts");
 const Collator = @import("collator").Collator;
 
 pub fn findOffset(coll: *Collator) usize {
@@ -9,8 +8,7 @@ pub fn findOffset(coll: *Collator) usize {
 
     while (offset < @min(a.len, b.len)) : (offset += 1) {
         if (a[offset] != b[offset]) break;
-        if (std.mem.indexOfScalar(u32, &consts.NEED_TWO, a[offset])) |_| break;
-        if (std.mem.indexOfScalar(u32, &consts.NEED_THREE, a[offset])) |_| break;
+        if (coll.collation.?.maxLen(coll.collation.?.entry(a[offset])) > 1) break;
     }
 
     if (offset == 0) return 0;

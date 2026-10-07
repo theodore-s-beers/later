@@ -3,6 +3,7 @@ const std = @import("std");
 const ascii = @import("ascii");
 const cea = @import("cea");
 const consts = @import("consts");
+const CollationData = @import("collation_table").Table;
 const load = @import("load");
 const normalize = @import("normalize");
 const prefix = @import("prefix");
@@ -30,8 +31,7 @@ pub const Collator = struct {
 
     decomp_map: ?types.SinglesMap = null,
     fcd_map: ?std.AutoHashMap(u32, u16) = null,
-    multi_map: ?types.MultiMap = null,
-    single_map: ?types.SinglesMap = null,
+    collation: ?CollationData = null,
     variable_map: ?std.AutoHashMap(u32, void) = null,
 
     //
@@ -73,8 +73,7 @@ pub const Collator = struct {
 
         coll.decomp_map = try load.loadDecomp(alloc);
         coll.fcd_map = try load.loadFCD(alloc);
-        coll.multi_map = try load.loadMulti(alloc, table == .cldr);
-        coll.single_map = try load.loadSingle(alloc, table == .cldr);
+        coll.collation = try load.loadCollation(alloc, table == .cldr);
         coll.variable_map = try load.loadVariable(alloc);
 
         return coll;
@@ -92,8 +91,7 @@ pub const Collator = struct {
 
         if (self.decomp_map) |*map| map.deinit();
         if (self.fcd_map) |*map| map.deinit();
-        if (self.multi_map) |*map| map.deinit();
-        if (self.single_map) |*map| map.deinit();
+        if (self.collation) |*data| data.deinit(self.alloc);
         if (self.variable_map) |*map| map.deinit();
     }
 
@@ -143,11 +141,22 @@ pub const Collator = struct {
     }
 
     pub fn getMulti(self: *Collator, codepoints: u64) ?[]const u32 {
-        return self.multi_map.?.map.get(codepoints);
+        const data = &self.collation.?;
+        const mask = 0x1FFFFF;
+        const last: u32 = @intCast(codepoints & mask);
+        const middle: u32 = @intCast((codepoints >> 21) & mask);
+        if (last > 0x10FFFF or middle > 0x10FFFF) return null;
+        if (codepoints >> 42 != 0) {
+            const first: u32 = @intCast(codepoints >> 42);
+            if (first > 0x10FFFF) return null;
+            return data.get3(data.entry(first), middle, last);
+        }
+        return data.get2(data.entry(middle), last);
     }
 
     pub fn getSingle(self: *Collator, codepoint: u32) ?[]const u32 {
-        return self.single_map.?.map.get(codepoint);
+        if (codepoint > 0x10FFFF) return null;
+        return self.collation.?.simpleRow(self.collation.?.entry(codepoint));
     }
 
     pub fn getVariable(self: *Collator, codepoint: u32) bool {
