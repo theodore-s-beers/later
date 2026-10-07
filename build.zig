@@ -94,6 +94,7 @@ pub fn build(b: *std.Build) void {
     cea_mod.addImport("ccc", ccc_mod);
     cea_mod.addImport("collator", collator_mod);
     cea_mod.addImport("consts", consts_mod);
+    cea_mod.addImport("sort_key", sort_key_mod);
     cea_mod.addImport("util", util_mod);
 
     collator_mod.addImport("ascii", ascii_mod);

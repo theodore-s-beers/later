@@ -118,10 +118,9 @@ pub const Collator = struct {
             if (prefixOrd != .eq or !self.tiebreak) return prefixOrd;
         }
 
-        try cea.generateCEA(self, offset, false); // a
-        try cea.generateCEA(self, offset, true); // b
+        if (try cea.comparePrimaryStreaming(self, offset)) |ord| return ord;
 
-        const ord = sort_key.cmpIncremental(self.a_cea.items, self.b_cea.items, self.shifting);
+        const ord = sort_key.cmpRemaining(self.a_cea.items, self.b_cea.items, self.shifting);
         if (ord == .eq and self.tiebreak) return util.cmpArray(u8, a, b);
 
         return ord;

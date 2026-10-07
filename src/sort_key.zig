@@ -1,11 +1,8 @@
 const std = @import("std");
 const util = @import("util");
 
-pub fn cmpIncremental(a_cea: []const u32, b_cea: []const u32, shifting: bool) std.math.Order {
-    if (shifting) {
-        if (comparePrimaryShifting(a_cea, b_cea)) |o| return o;
-    } else if (comparePrimary(a_cea, b_cea)) |o| return o;
-
+// Primary weights have already tied during streaming CEA generation.
+pub fn cmpRemaining(a_cea: []const u32, b_cea: []const u32, shifting: bool) std.math.Order {
     if (compareSecondary(a_cea, b_cea)) |o| return o;
 
     if (compareTertiary(a_cea, b_cea)) |o| return o;
@@ -15,10 +12,6 @@ pub fn cmpIncremental(a_cea: []const u32, b_cea: []const u32, shifting: bool) st
 
     if (comparePrimary(a_cea, b_cea)) |o| return o; // i.e., compare "quaternary" weights
 
-    // If we got to this point, return Equal. The efficiency of processing and comparing sort keys
-    // incrementally, for both strings at once, relies on the rarity of needing to continue all the
-    // way through tertiary or quaternary weights. (Remember, there are two earlier fast paths for
-    // equal strings -- one before normalization, one after.)
     return .eq;
 }
 
@@ -33,21 +26,6 @@ fn comparePrimary(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
     while (true) {
         const a_p = nextValidPrimary(a_cea, &i_a);
         const b_p = nextValidPrimary(b_cea, &i_b);
-
-        if (a_p != b_p) return util.cmp(u16, a_p, b_p);
-        if (a_p == 0) return null; // i.e., both exhausted
-    }
-
-    unreachable;
-}
-
-fn comparePrimaryShifting(a_cea: []const u32, b_cea: []const u32) ?std.math.Order {
-    var i_a: usize = 0;
-    var i_b: usize = 0;
-
-    while (true) {
-        const a_p = nextValidPrimaryShifting(a_cea, &i_a);
-        const b_p = nextValidPrimaryShifting(b_cea, &i_b);
 
         if (a_p != b_p) return util.cmp(u16, a_p, b_p);
         if (a_p == 0) return null; // i.e., both exhausted
@@ -94,25 +72,6 @@ fn nextValidPrimary(cea: []const u32, i: *usize) u16 {
     while (i.* < cea.len) {
         const nextWeights = cea[i.*];
         if (nextWeights == std.math.maxInt(u32)) return 0;
-
-        const nextPrimary = primary(nextWeights);
-        i.* += 1;
-
-        if (nextPrimary != 0) return nextPrimary;
-    }
-
-    return 0;
-}
-
-fn nextValidPrimaryShifting(cea: []const u32, i: *usize) u16 {
-    while (i.* < cea.len) {
-        const nextWeights = cea[i.*];
-        if (nextWeights == std.math.maxInt(u32)) return 0;
-
-        if (variability(nextWeights)) {
-            i.* += 1;
-            continue;
-        }
 
         const nextPrimary = primary(nextWeights);
         i.* += 1;
