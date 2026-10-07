@@ -120,6 +120,7 @@ pub fn build(b: *std.Build) void {
     normalize_mod.addImport("collator", collator_mod);
 
     prefix_mod.addImport("collator", collator_mod);
+    prefix_mod.addImport("ccc", ccc_mod);
 
     sort_key_mod.addImport("util", util_mod);
 

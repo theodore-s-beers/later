@@ -102,7 +102,13 @@ pub const Collator = struct {
     pub fn collate(self: *Collator, a: []const u8, b: []const u8) CollateError!std.math.Order {
         if (std.mem.eql(u8, a, b)) return .eq;
 
-        if (try ascii.fillCodepointsAndCompareAscii(self.alloc, &self.a_chars, &self.b_chars, a, b)) |ord|
+        const byte_offset = prefix.findByteOffset(self, a, b);
+        return self.collateSuffixes(a, b, byte_offset);
+    }
+
+    // Keep the original bytes for the optional tiebreak even when work starts later.
+    fn collateSuffixes(self: *Collator, a: []const u8, b: []const u8, byte_offset: usize) CollateError!std.math.Order {
+        if (try ascii.fillCodepointsAndCompareAscii(self.alloc, &self.a_chars, &self.b_chars, a[byte_offset..], b[byte_offset..])) |ord|
             return ord;
 
         try normalize.makeNFD(self, &self.a_chars);
@@ -149,3 +155,50 @@ pub const Collator = struct {
         return self.variable_map.?.contains(codepoint);
     }
 };
+
+test "byte prefix trimming skips decoding long shared text" {
+    var coll = try Collator.initDefault(std.testing.allocator);
+    defer coll.deinit();
+    var a: [769]u8 = undefined;
+    for (0..128) |i| @memcpy(a[i * 6 ..][0..6], "漢字");
+    a[768] = 'a';
+    var b = a;
+    b[768] = 'b';
+    try std.testing.expectEqual(std.math.Order.lt, try coll.collate(&a, &b));
+    try std.testing.expectEqualSlices(u32, &.{'a'}, coll.a_chars.items);
+    try std.testing.expectEqualSlices(u32, &.{'b'}, coll.b_chars.items);
+}
+
+test "byte prefix trimming agrees with untrimmed comparisons" {
+    const tokens = [_][]const u8{
+        "",         "a",        "A",       "l",              "L",       "-",        "\x00",
+        "é",
+        "e\u{301}", "\u{334}",  "\u{F73}", "\u{FB2}\u{F71}", "\u{F80}", "\u{1100}", "\u{1161}",
+        "가",
+        "漢字",
+        "\u{FFFE}", "\u{FFFF}", "\xff",    "\xc2",           "\x80",    "\xf0\x9f", "\u{1F600}",
+    };
+    const prefixes = [_][]const u8{ "", "common", "a-", "é", "漢字", "\u{FB2}", "\u{FB2}\u{F71}", "\xffx", "\u{1100}", "가", "a\u{334}" };
+    for ([_]types.CollationTable{ .ducet, .cldr }) |table| {
+        for ([_]bool{ false, true }) |shifting| {
+            for ([_]bool{ false, true }) |tiebreak| {
+                var coll = try Collator.init(std.testing.allocator, table, shifting, tiebreak);
+                defer coll.deinit();
+                for (prefixes) |shared| {
+                    for (tokens) |left| {
+                        for (tokens) |right| {
+                            var a_buf: [128]u8 = undefined;
+                            var b_buf: [128]u8 = undefined;
+                            const a = try std.fmt.bufPrint(&a_buf, "{s}{s}", .{ shared, left });
+                            const b = try std.fmt.bufPrint(&b_buf, "{s}{s}", .{ shared, right });
+                            const expected = try coll.collateSuffixes(a, b, 0);
+                            const actual = try coll.collate(a, b);
+                            if (expected != actual) std.debug.print("prefix={s}, a={x}, b={x}, table={s}, shifting={}, tiebreak={}\n", .{ shared, a, b, @tagName(table), shifting, tiebreak });
+                            try std.testing.expectEqual(expected, actual);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
