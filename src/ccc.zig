@@ -1,11 +1,11 @@
 pub fn getCombiningClass(codepoint: u32) u8 {
-    if (codepoint > LAST_CODEPOINT) return @intFromEnum(CombiningClass.NR);
+    if (codepoint > LAST_CODEPOINT) return @backingInt(CombiningClass.NR);
 
     const block_index = @as(usize, codepoint) >> SHIFT;
     const block_offset = BLOCK_OFFSETS[block_index];
     const within_block = @as(usize, codepoint) & MASK;
 
-    return @intFromEnum(CCC_BLOCKS[block_offset + within_block]);
+    return @backingInt(CCC_BLOCKS[block_offset + within_block]);
 }
 
 const CombiningClass = enum(u8) {

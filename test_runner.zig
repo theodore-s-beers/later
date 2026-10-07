@@ -12,7 +12,10 @@ pub fn main(init: std.process.Init) void {
     var leak: usize = 0;
 
     for (builtin.test_functions) |t| {
-        std.testing.allocator_instance = .{};
+        std.testing.allocator_instance = .init(std.heap.page_allocator, .{
+            .canary = 0xc3a701ba,
+            .check_write_after_free = true,
+        });
 
         const start = std.Io.Clock.Timestamp.now(io, .awake);
         const result = t.func();
@@ -42,7 +45,7 @@ pub fn main(init: std.process.Init) void {
         }
 
         var leaked = false;
-        if (std.testing.allocator_instance.deinit() == .leak) {
+        if (std.testing.allocator_instance.deinit() != 0) {
             leak += 1;
             leaked = true;
             status = .fail;
