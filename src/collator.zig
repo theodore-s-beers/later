@@ -1,4 +1,3 @@
-const normalization = @import("normalization_tables.zig");
 const std = @import("std");
 
 const ascii = @import("ascii");
@@ -6,6 +5,7 @@ const cea = @import("cea");
 const consts = @import("consts");
 const CollationData = @import("collation_table").Table;
 const load = @import("load");
+const normalization = @import("normalization_tables.zig");
 const normalize = @import("normalize");
 const prefix = @import("prefix");
 const sort_key = @import("sort_key");
@@ -127,7 +127,7 @@ pub const Collator = struct {
     }
 
     //
-    // Helpers for map lookups
+    // Helpers for table lookups
     //
 
     pub fn getDecomp(self: *Collator, codepoint: u32) ?[]const u32 {

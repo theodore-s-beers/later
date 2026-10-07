@@ -63,8 +63,9 @@ generating maps from Unicode data files. We need to be able to determine
 quickly, for a given code point, its canonical decomposition, combining class,
 collation weights, and more. I built the maps for `later` in a separate
 repository, [uca-maps-zig](https://github.com/theodore-s-beers/uca-maps-zig).
-They're serialized in simple custom binary formats (see `src/bin`) and loaded
-on-demand in collation.
+The collation tables are embedded as indexed binaries (see `src/bin`) and loaded
+when a collator is initialized. Other lookup tables are generated Zig arrays
+shared by all collators.
 
 Another part of the fun in this project was implementing UTF-8
 decoding/validation and Unicode form NFD normalization. It turns out the
