@@ -139,20 +139,6 @@ pub fn implicitB(cp: u32) u32 {
     return packWeights(false, @intCast(bbbb), 0, 0);
 }
 
-pub fn packCodePoints(code_points: []const u32) u64 {
-    switch (code_points.len) {
-        2 => {
-            return (@as(u64, code_points[0]) << 21) | code_points[1];
-        },
-        3 => {
-            return (@as(u64, code_points[0]) << 42) |
-                (@as(u64, code_points[1]) << 21) |
-                code_points[2];
-        },
-        else => unreachable,
-    }
-}
-
 pub fn packWeights(variable: bool, primary: u16, secondary: u16, tertiary: u8) u32 {
     const upper: u32 = (@as(u32, primary) << 16);
     const v_int: u16 = @intFromBool(variable);
