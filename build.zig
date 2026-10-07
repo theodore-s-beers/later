@@ -125,7 +125,6 @@ pub fn build(b: *std.Build) void {
 
     util_mod.addImport("ccc", ccc_mod);
     util_mod.addImport("collator", collator_mod);
-    util_mod.addImport("consts", consts_mod);
 
     // Now, we will create a static library based on the module we created above.
     // This creates a `std.Build.Step.Compile`, which is the build step responsible

@@ -139,7 +139,7 @@ const Cursor = struct {
                 else
                     right; // Skip the loop below; there will be no discontiguous match
 
-                var try_two = max_right - right == 2 and coll.table == .cldr;
+                var try_two = max_right - right == 2 and lookahead == 3;
 
                 while (max_right > right) {
                     // Make sure the sequence of CCC values is kosher
@@ -322,4 +322,19 @@ test "streaming handles expansions implicit weights and buffer reuse" {
     try std.testing.expectEqual(std.math.maxInt(u32), coll.a_cea.items[1]);
     try std.testing.expectEqual(std.math.maxInt(u32), coll.b_cea.items[1]);
     try std.testing.expectEqual(std.math.Order.eq, sort_key.cmpRemaining(coll.a_cea.items, coll.b_cea.items, true));
+}
+
+test "Unicode 18 DUCET pulls both Tibetan contraction marks" {
+    var coll = try Collator.init(std.testing.allocator, .ducet, false, false);
+    defer coll.deinit();
+    // Overlay (CCC 1) does not block the Tibetan marks (CCC 129, 130).
+    try coll.a_chars.appendSlice(coll.alloc, &.{ 0xFB2, 0x334, 0xF71, 0xF80 });
+    var cursor = Cursor.init(&coll, 0, false);
+    while (try cursor.nextPrimary() != 0) {}
+    const table = &coll.collation.?;
+    const contraction = table.get3(table.entry(0xFB2), 0xF71, 0xF80).?;
+    const overlay = coll.getSingle(0x334).?;
+    try std.testing.expectEqualSlices(u32, contraction, coll.a_cea.items[0..contraction.len]);
+    try std.testing.expectEqualSlices(u32, overlay, coll.a_cea.items[contraction.len..][0..overlay.len]);
+    try std.testing.expectEqual(contraction.len + overlay.len, cursor.cea_len);
 }

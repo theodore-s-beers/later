@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const ccc = @import("ccc");
-const consts = @import("consts");
+const implicit = @import("implicit.zig");
 
 pub fn cccSequenceOk(test_range: []u32) bool {
     var max_cc: u8 = 0;
@@ -92,51 +92,13 @@ pub fn handleLowWeights(
 }
 
 pub fn implicitA(cp: u32) u32 {
-    const aaaa = blk: {
-        if (std.mem.indexOfScalar(u32, &consts.INCLUDED_UNASSIGNED, cp)) |_| {
-            break :blk 0xFBC0 + (cp >> 15);
-        }
-
-        if ((cp >= 0x3400 and cp <= 0x4DBF) or
-            (cp >= 0x20000 and cp <= 0x2A6DF) or
-            (cp >= 0x2A700 and cp <= 0x2EE5D) or
-            (cp >= 0x30000 and cp <= 0x323AF))
-        {
-            break :blk 0xFB80 + (cp >> 15); // CJK2
-        }
-
-        if ((cp >= 0x4E00 and cp <= 0x9FFF) or (cp >= 0xF900 and cp <= 0xFAFF)) {
-            break :blk 0xFB40 + (cp >> 15); // CJK1
-        }
-
-        if ((cp >= 0x17000 and cp <= 0x18AFF) or (cp >= 0x18D00 and cp <= 0x18D8F)) {
-            break :blk 0xFB00; // Tangut
-        }
-
-        if (cp >= 0x18B00 and cp <= 0x18CFF) break :blk 0xFB02; // Khitan
-        if (cp >= 0x1B170 and cp <= 0x1B2FF) break :blk 0xFB01; // Nushu
-        break :blk 0xFBC0 + (cp >> 15); // Unassigned
-    };
-
-    return packWeights(false, @intCast(aaaa), 32, 2);
+    const pair = implicit.weights(cp);
+    return packWeights(false, @intCast(pair[0]), 32, 2);
 }
 
 pub fn implicitB(cp: u32) u32 {
-    var bbbb = blk: {
-        if (std.mem.indexOfScalar(u32, &consts.INCLUDED_UNASSIGNED, cp)) |_|
-            break :blk cp & 0x7FFF;
-
-        if ((cp >= 0x17000 and cp <= 0x18AFF) or (cp >= 0x18D00 and cp <= 0x18D8F)) {
-            break :blk cp - 0x17000; // Tangut
-        }
-
-        if (cp >= 0x18B00 and cp <= 0x18CFF) break :blk cp - 0x18B00; // Khitan
-        if (cp >= 0x1B170 and cp <= 0x1B2FF) break :blk cp - 0x1B170; // Nushu
-        break :blk cp & 0x7FFF; // CJK1, CJK2, unassigned
-    };
-
-    bbbb |= 0x8000; // BBBB always bitwise ORed with this value
-    return packWeights(false, @intCast(bbbb), 0, 0);
+    const pair = implicit.weights(cp);
+    return packWeights(false, @intCast(pair[1]), 0, 0);
 }
 
 pub fn packWeights(variable: bool, primary: u16, secondary: u16, tertiary: u8) u32 {
@@ -187,4 +149,24 @@ pub fn unpackWeights(packed_weights: u32) struct { bool, u16, u16, u16 } {
     const tertiary = (lower >> 9) & 0b11_1111;
 
     return .{ variable, primary, secondary, tertiary };
+}
+
+test "Unicode 18 implicit weights respect script assignments and gaps" {
+    const cases = [_]struct { u32, u32, u32 }{
+        .{ 0x18800, 0xFB01, 0x8000 }, // Tangut components have their own base.
+        .{ 0x18D80, 0xFB01, 0x8580 }, // Supplement shares the original offset.
+        .{ 0x1B170, 0xFB02, 0x8000 }, // Nushu.
+        .{ 0x18CFF, 0xFB03, 0x81FF }, // Assigned Khitan character after a gap.
+        .{ 0x18E00, 0xFB04, 0x8000 }, // Jurchen.
+        .{ 0x191A0, 0xFB04, 0x83A0 }, // Jurchen radicals.
+        .{ 0x3D000, 0xFB05, 0x8000 }, // Seal.
+        .{ 0x2B81E, 0xFB85, 0xB81E }, // Newly assigned Han, formerly special-cased.
+        .{ 0x33479, 0xFB86, 0xB479 }, // Last assigned CJK extension J character.
+        .{ 0x3347A, 0xFBC6, 0xB47A }, // Unassigned following it.
+        .{ 0x18DF3, 0xFBC3, 0x8DF3 }, // Unassigned Tangut supplement slot.
+    };
+    for (cases) |case| {
+        try std.testing.expectEqual(packWeights(false, @intCast(case[1]), 32, 2), implicitA(case[0]));
+        try std.testing.expectEqual(packWeights(false, @intCast(case[2]), 0, 0), implicitB(case[0]));
+    }
 }
